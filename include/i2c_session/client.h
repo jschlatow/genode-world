@@ -17,25 +17,34 @@
 #ifndef _INCLUDE__I2C_SESSION__CLIENT_H_
 #define _INCLUDE__I2C_SESSION__CLIENT_H_
 
-#include <i2c_session/zynq/capability.h>
+#include <i2c_session/i2c_session.h>
 #include <base/rpc_client.h>
 
 namespace I2C {
 
 	struct Session_client : Genode::Rpc_client<Session>
 	{
-		explicit Session_client(Session_capability session)
+		explicit Session_client(Genode::Capability<Session> session)
 		: Genode::Rpc_client<Session>(session) { }
+
+		bool read_byte_8bit_reg(Genode::uint8_t adr, Genode::uint8_t reg, Genode::uint8_t *data)
+		{
+			return call<Rpc_read_byte_8bit_reg>(adr, reg, data);
+		}
+
+		bool write_byte_8bit_reg(Genode::uint8_t adr, Genode::uint8_t reg, Genode::uint8_t data)
+		{
+			return call<Rpc_write_byte_8bit_reg>(adr, reg, data);
+		}
 
 		bool read_byte_16bit_reg(Genode::uint8_t adr, Genode::uint16_t reg, Genode::uint8_t *data)
 		{
 			return call<Rpc_read_byte_16bit_reg>(adr, reg, data);
 		}
 
-		bool write_16bit_reg(Genode::uint8_t adr, Genode::uint16_t reg,
-			Genode::uint8_t data)
+		bool write_byte_16bit_reg(Genode::uint8_t adr, Genode::uint16_t reg, Genode::uint8_t data)
 		{
-			return call<Rpc_write_16bit_reg>(adr, reg, data);
+			return call<Rpc_write_byte_16bit_reg>(adr, reg, data);
 		}
 	};
 }

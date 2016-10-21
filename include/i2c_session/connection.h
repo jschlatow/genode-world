@@ -16,7 +16,7 @@
 #ifndef _INCLUDE__I2C_SESSION__CONNECTION_H_
 #define _INCLUDE__I2C_SESSION__CONNECTION_H_
 
-#include <i2c_session/zynq/client.h>
+#include <i2c_session/client.h>
 #include <base/connection.h>
 
 namespace I2C {

@@ -50,15 +50,12 @@ class I2C::Driver
 	public:
 		static Driver& factory();
 
-		bool read_byte_16bit_reg(unsigned bus, Genode::uint8_t adr, Genode::uint16_t reg, Genode::uint8_t *data)
+		bool read_byte_8bit_reg(unsigned bus, Genode::uint8_t adr, Genode::uint8_t reg, Genode::uint8_t *data)
 		{
 			Zynq_I2C *i2c_reg = _i2c_bank[bus].regs();
-			Genode::uint8_t buf[2];
-			buf[0]=reg >> 8;
-			buf[1]=reg;
-			if (i2c_reg->i2c_write(adr, buf, 2) != 0) 
+			if (i2c_reg->i2c_write(adr, &reg, 1) != 0) 
 			{
-				Genode::error("Zynq i2c: read failed");
+				Genode::error("Zynq i2c: write failed");
 				return false;
 			}
 			if (i2c_reg->i2c_read_byte(adr, data) != 0) 
@@ -69,8 +66,40 @@ class I2C::Driver
 			return true;
 		}
 
-		bool write_16bit_reg(unsigned bus, Genode::uint8_t adr, Genode::uint16_t reg,
-			Genode::uint8_t data)
+		bool write_byte_8bit_reg(unsigned bus, Genode::uint8_t adr, Genode::uint8_t reg, Genode::uint8_t data)
+		{
+			Zynq_I2C *i2c_reg = _i2c_bank[bus].regs();
+			Genode::uint8_t buf[2];
+			buf[0]=reg;
+			buf[1]=data;
+			if (i2c_reg->i2c_write(adr, buf, 2) != 0) 
+			{
+				Genode::error("Zynq i2c: write failed");
+				return false;
+			}
+			return true;
+		}
+
+		bool read_byte_16bit_reg(unsigned bus, Genode::uint8_t adr, Genode::uint16_t reg, Genode::uint8_t *data)
+		{
+			Zynq_I2C *i2c_reg = _i2c_bank[bus].regs();
+			Genode::uint8_t buf[2];
+			buf[0]=reg >> 8;
+			buf[1]=reg;
+			if (i2c_reg->i2c_write(adr, buf, 2) != 0) 
+			{
+				Genode::error("i2c_write failed");
+				return false;
+			}
+			if (i2c_reg->i2c_read_byte(adr, data) != 0) 
+			{
+				Genode::error("i2c_read failed");
+				return false;
+			}
+			return true;
+		}
+
+		bool write_byte_16bit_reg(unsigned bus, Genode::uint8_t adr, Genode::uint16_t reg, Genode::uint8_t data)
 		{
 			Zynq_I2C *i2c_reg = _i2c_bank[bus].regs();
 			Genode::uint8_t buf[3];
@@ -79,7 +108,7 @@ class I2C::Driver
 			buf[2]=data;
 			if (i2c_reg->i2c_write(adr, buf, 3) != 0) 
 			{
-				Genode::error("Zynq i2c: write failed");
+				Genode::error("i2c_write failed");
 				return false;
 			}
 			return true;

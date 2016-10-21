@@ -41,15 +41,24 @@ class I2C::Session_component : public Genode::Rpc_object<I2C::Session>
 
 		Session_component(Driver &driver, unsigned int bus_num) : _driver(driver), _bus(bus_num) {}
 
+		virtual bool read_byte_8bit_reg(Genode::uint8_t adr, Genode::uint8_t reg, Genode::uint8_t *data)
+		{
+			return _driver.read_byte_8bit_reg(_bus, adr, reg, data);
+		}
+
+		virtual bool write_byte_8bit_reg(Genode::uint8_t adr, Genode::uint8_t reg, Genode::uint8_t data)
+		{
+			return _driver.write_byte_8bit_reg(_bus, adr, reg, data);
+		}
+
 		virtual bool read_byte_16bit_reg(Genode::uint8_t adr, Genode::uint16_t reg, Genode::uint8_t *data)
 		{
 			return _driver.read_byte_16bit_reg(_bus, adr, reg, data);
 		}
 
-		virtual bool write_16bit_reg(Genode::uint8_t adr, Genode::uint16_t reg,
-			Genode::uint8_t data)
+		virtual bool write_byte_16bit_reg(Genode::uint8_t adr, Genode::uint16_t reg, Genode::uint8_t data)
 		{
-			return _driver.write_16bit_reg(_bus, adr, reg, data);
+			return _driver.write_byte_16bit_reg(_bus, adr, reg, data);
 		}
 };
 

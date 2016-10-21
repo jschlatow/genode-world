@@ -29,6 +29,26 @@ namespace I2C {
 		virtual ~Session() { }
 
 		/**
+		 * Read a single byte from a 8 bit register of the device
+		 *
+		 * \param adr the address of the device on the bus
+		 * \param reg the register to read
+		 * \param data the read value
+		 *
+		 */
+		virtual bool read_byte_8bit_reg(Genode::uint8_t adr, Genode::uint8_t reg, Genode::uint8_t *data) = 0;
+		
+		/**
+		 * Write a single data byte to a 8 bit register
+		 *
+		 * \param adr the address of the device on the bus
+		 * \param reg the register to write
+		 * \param data the value to write
+		 *
+		 */
+		virtual bool write_byte_8bit_reg(Genode::uint8_t adr, Genode::uint8_t reg, Genode::uint8_t data) = 0;
+
+		/**
 		 * Read a single byte from a 16 bit register of the device
 		 *
 		 * \param adr the address of the device on the bus
@@ -46,22 +66,27 @@ namespace I2C {
 		 * \param data the value to write
 		 *
 		 */
-		virtual bool write_16bit_reg(Genode::uint8_t adr, Genode::uint16_t reg,
-			Genode::uint8_t data) = 0;
+		virtual bool write_byte_16bit_reg(Genode::uint8_t adr, Genode::uint16_t reg, Genode::uint8_t data) = 0;
 
 
 		/*********************
 		 ** RPC declaration **
 		 *********************/
 
+		GENODE_RPC(Rpc_read_byte_8bit_reg, bool, read_byte_8bit_reg,
+			Genode::uint8_t, Genode::uint8_t, Genode::uint8_t*);
+		GENODE_RPC(Rpc_write_byte_8bit_reg, bool, write_byte_8bit_reg,
+			Genode::uint8_t, Genode::uint8_t, Genode::uint8_t);
 		GENODE_RPC(Rpc_read_byte_16bit_reg, bool, read_byte_16bit_reg,
 			Genode::uint8_t, Genode::uint16_t, Genode::uint8_t*);
-		GENODE_RPC(Rpc_write_16bit_reg, bool, write_16bit_reg,
+		GENODE_RPC(Rpc_write_byte_16bit_reg, bool, write_byte_16bit_reg,
 			Genode::uint8_t, Genode::uint16_t, Genode::uint8_t);
 
 		GENODE_RPC_INTERFACE(
+			Rpc_read_byte_8bit_reg,
+			Rpc_write_byte_8bit_reg,
 			Rpc_read_byte_16bit_reg,
-			Rpc_write_16bit_reg
+			Rpc_write_byte_16bit_reg
 		);
 	};
 }

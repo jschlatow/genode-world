@@ -39,6 +39,10 @@ struct Genode::Board_base : Zynq::Board_base
 		SDHCI_IRQ  = 79,
 
 		UART_1_MMIO_BASE = MMIO_0_BASE + UART_SIZE,
+
+		I2C0_MMIO_BASE = MMIO_0_BASE + 0x4000,
+		I2C1_MMIO_BASE = MMIO_0_BASE + 0x5000,
+		I2C_MMIO_SIZE = 0x1000,
 	};
 };
 

@@ -1,0 +1,49 @@
+build "core init test/adv7511 drivers/i2c drivers/timer"
+
+create_boot_directory
+
+append config {
+<config>
+	<parent-provides>
+		<service name="ROM"/>
+		<service name="RAM"/>
+		<service name="IRQ"/>
+		<service name="IO_MEM"/>
+		<service name="IO_PORT"/>
+		<service name="CAP"/>
+		<service name="PD"/>
+		<service name="RM"/>
+		<service name="CPU"/>
+		<service name="LOG"/>
+		<service name="SIGNAL"/>
+	</parent-provides>
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+	<start name="timer">
+		<resource name="RAM" quantum="1M"/>
+		<provides>
+			<service name="Timer"/>
+		</provides>
+	</start>
+	<start name="zynq_i2c_drv">
+		<resource name="RAM" quantum="1M"/>
+		<provides>
+			<service name="I2C"/>
+		</provides>
+	</start>
+	<start name="test-adv7511">
+		<resource name="RAM" quantum="1M"/>
+	</start>
+</config>
+}
+
+install_config $config
+
+build_boot_image {
+	core init test-adv7511 zynq_i2c_drv timer
+}
+
+append qemu_args " -nographic -m 64 "
+
+run_genode_until forever

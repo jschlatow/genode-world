@@ -30,9 +30,5 @@ int main()
 					" via I2C controller at: ", Hex(Board_base::I2C0_MMIO_BASE));
 	dump_registers(i2c, Config::ADV7511_ADDR_1);
 
-	Genode::log("\nTesting ADV7511 interface on address ", Hex(Config::ADV7511_ADDR_2), 
-					" via I2C controller at: ", Hex(Board_base::I2C0_MMIO_BASE));
-	dump_registers(i2c, Config::ADV7511_ADDR_2);
-
 	return 0;
 }

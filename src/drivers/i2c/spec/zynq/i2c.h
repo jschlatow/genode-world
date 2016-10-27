@@ -67,101 +67,101 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 
 	struct Control : Register<0x0, 16>
 	{
-		struct divisor_a 	: Bitfield<14,2> {};
-		struct divisor_b 	: Bitfield<8,6> {};
-		struct CLR_FIFO	 	: Bitfield<6,1> {};
-		struct SLVMON	 	: Bitfield<5,1> {};
-		struct HOLD	 	: Bitfield<4,1> {};
-		struct ACK_EN	 	: Bitfield<3,1> {};
-		struct NEA	 	: Bitfield<2,1> {};
-		struct MS	 	: Bitfield<1,1> {};
-		struct RW	 	: Bitfield<0,1> {};
+		struct divisor_a  : Bitfield<14,2> {};
+		struct divisor_b  : Bitfield<8,6> {};
+		struct CLR_FIFO   : Bitfield<6,1> {};
+		struct SLVMON     : Bitfield<5,1> {};
+		struct HOLD       : Bitfield<4,1> {};
+		struct ACK_EN     : Bitfield<3,1> {};
+		struct NEA        : Bitfield<2,1> {};
+		struct MS         : Bitfield<1,1> {};
+		struct RW         : Bitfield<0,1> {};
 	};
 
 	struct Status : Register<0x4, 16>
 	{
-		struct BA 		: Bitfield<8,1> {};
-		struct RXOVF 		: Bitfield<7,1> {};
-		struct TXDV 		: Bitfield<6,1> {};
-		struct RXDV 		: Bitfield<5,1> {};
-		struct RXRW 		: Bitfield<3,1> {};
+		struct BA     : Bitfield<8,1> {};
+		struct RXOVF  : Bitfield<7,1> {};
+		struct TXDV   : Bitfield<6,1> {};
+		struct RXDV   : Bitfield<5,1> {};
+		struct RXRW   : Bitfield<3,1> {};
 	};
 
 	struct I2C_address : Register<0x8, 16>
 	{
-		struct ADD 		: Bitfield<0,10> {};
+		struct ADD : Bitfield<0,10> {};
 	};
 
 	struct I2C_data : Register<0xC, 16>
 	{
-		struct DATA 		: Bitfield<0,8> {};
+		struct DATA : Bitfield<0,8> {};
 	};
 
 	struct Interrupt_status : Register<0x10, 16>
 	{
-		struct ARB_LOST 	: Bitfield<9,1> {};
-		struct RX_UNF 		: Bitfield<7,1> {};
-		struct TX_OVF 		: Bitfield<6,1> {};
-		struct RX_OVF 		: Bitfield<5,1> {};
-		struct SLV_RDY 		: Bitfield<4,1> {};
-		struct TO 		: Bitfield<3,1> {};
-		struct NACK 		: Bitfield<2,1> {};
-		struct DATA 		: Bitfield<1,1> {};
-		struct COMP 		: Bitfield<0,1> {};
+		struct ARB_LOST : Bitfield<9,1> {};
+		struct RX_UNF   : Bitfield<7,1> {};
+		struct TX_OVF   : Bitfield<6,1> {};
+		struct RX_OVF   : Bitfield<5,1> {};
+		struct SLV_RDY  : Bitfield<4,1> {};
+		struct TO       : Bitfield<3,1> {};
+		struct NACK     : Bitfield<2,1> {};
+		struct DATA     : Bitfield<1,1> {};
+		struct COMP     : Bitfield<0,1> {};
 	};
 
 	struct Transfer_size : Register<0x14, 8>
 	{
-		struct SIZE		: Bitfield<0,8> {};
+		struct SIZE : Bitfield<0,8> {};
 	};
 
 	struct Slave_mon_pause : Register<0x18, 8>
 	{
-		struct PAUSE 		: Bitfield<0,4> {};
+		struct PAUSE : Bitfield<0,4> {};
 	};
 
 	struct Time_out : Register<0x1C, 8>
 	{
-		struct TO 		: Bitfield<0,8> {};
+		struct TO : Bitfield<0,8> {};
 	};
 
 	struct Interrupt_mask : Register<0x20, 16>
 	{
-		struct ARB_LOST 	: Bitfield<9,1> {};
-		struct RX_UNF 		: Bitfield<7,1> {};
-		struct TX_OVF 		: Bitfield<6,1> {};
-		struct RX_OVF 		: Bitfield<5,1> {};
-		struct SLV_RDY 		: Bitfield<4,1> {};
-		struct TO 		: Bitfield<3,1> {};
-		struct NACK 		: Bitfield<2,1> {};
-		struct DATA 		: Bitfield<1,1> {};
-		struct COMP 		: Bitfield<0,1> {};
+		struct ARB_LOST : Bitfield<9,1> {};
+		struct RX_UNF   : Bitfield<7,1> {};
+		struct TX_OVF   : Bitfield<6,1> {};
+		struct RX_OVF   : Bitfield<5,1> {};
+		struct SLV_RDY  : Bitfield<4,1> {};
+		struct TO       : Bitfield<3,1> {};
+		struct NACK     : Bitfield<2,1> {};
+		struct DATA     : Bitfield<1,1> {};
+		struct COMP     : Bitfield<0,1> {};
 	};
 
 	struct Interrupt_enable : Register<0x24, 16>
 	{
-		struct ARB_LOST 	: Bitfield<9,1> {};
-		struct RX_UNF 		: Bitfield<7,1> {};
-		struct TX_OVF 		: Bitfield<6,1> {};
-		struct RX_OVF 		: Bitfield<5,1> {};
-		struct SLV_RDY 		: Bitfield<4,1> {};
-		struct TO 		: Bitfield<3,1> {};
-		struct NACK 		: Bitfield<2,1> {};
-		struct DATA 		: Bitfield<1,1> {};
-		struct COMP 		: Bitfield<0,1> {};
+		struct ARB_LOST : Bitfield<9,1> {};
+		struct RX_UNF   : Bitfield<7,1> {};
+		struct TX_OVF   : Bitfield<6,1> {};
+		struct RX_OVF   : Bitfield<5,1> {};
+		struct SLV_RDY  : Bitfield<4,1> {};
+		struct TO       : Bitfield<3,1> {};
+		struct NACK     : Bitfield<2,1> {};
+		struct DATA     : Bitfield<1,1> {};
+		struct COMP     : Bitfield<0,1> {};
 	};
 
 	struct Interrupt_disable : Register<0x28, 16>
 	{
-		struct ARB_LOST 	: Bitfield<9,1> {};
-		struct RX_UNF 		: Bitfield<7,1> {};
-		struct TX_OVF 		: Bitfield<6,1> {};
-		struct RX_OVF 		: Bitfield<5,1> {};
-		struct SLV_RDY 		: Bitfield<4,1> {};
-		struct TO 		: Bitfield<3,1> {};
-		struct NACK 		: Bitfield<2,1> {};
-		struct DATA 		: Bitfield<1,1> {};
-		struct COMP 		: Bitfield<0,1> {};
+		struct ARB_LOST : Bitfield<9,1> {};
+		struct RX_UNF   : Bitfield<7,1> {};
+		struct TX_OVF   : Bitfield<6,1> {};
+		struct RX_OVF   : Bitfield<5,1> {};
+		struct SLV_RDY  : Bitfield<4,1> {};
+		struct TO       : Bitfield<3,1> {};
+		struct NACK     : Bitfield<2,1> {};
+		struct DATA     : Bitfield<1,1> {};
+		struct COMP     : Bitfield<0,1> {};
 	};
 
 

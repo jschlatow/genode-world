@@ -17,30 +17,6 @@
 #include <os/attached_io_mem_dataspace.h>
 #include <util/mmio.h>
 
-/* Transfer direction */
-#define SENDING	0
-#define RECEIVING 1
-
-/* Interrupt masks */
-#define INTERRUPT_ARB_LOST_MASK  0x00000200
-#define INTERRUPT_RX_UNF_MASK    0x00000080
-#define INTERRUPT_TX_OVR_MASK    0x00000040
-#define INTERRUPT_RX_OVR_MASK    0x00000020
-#define INTERRUPT_SLV_RDY_MASK   0x00000010
-#define INTERRUPT_TO_MASK        0x00000008
-#define INTERRUPT_NACK_MASK      0x00000004
-#define INTERRUPT_DATA_MASK      0x00000002
-#define INTERRUPT_COMP_MASK      0x00000001
-#define ALL_INTERRUPTS_MASK     0x000002FF
-
-/* Maximal transfer size */
-#define I2C_MAX_TRANSFER_SIZE 252
-
-/* FIFO size */
-#define I2C_FIFO_DEPTH 16
-
-/* Number of bytes at data intr */
-#define I2C_DATA_INTR_DEPTH 14
 
 namespace I2C {
 	using namespace Genode;
@@ -49,17 +25,24 @@ namespace I2C {
 
 struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 {
+	enum {
+		/* Maximal transfer size */
+		I2C_MAX_TRANSFER_SIZE = 252,
+
+		/* FIFO size */
+		I2C_FIFO_DEPTH = 16,
+
+		/* Number of bytes at data intr */
+		I2C_DATA_INTR_DEPTH = 14,
+	};
+
 	Zynq_I2C(Genode::addr_t const mmio_base, Genode::size_t const mmio_size) :
 		Genode::Attached_io_mem_dataspace(mmio_base, mmio_size),
 	  	Genode::Mmio((Genode::addr_t)local_addr<void>())
-	{
-
-	}
+	{ }
 
 	~Zynq_I2C() 
-	{
-	
-	}
+	{ }
 
 	/*
 	 * Registers
@@ -75,7 +58,12 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 		struct ACK_EN     : Bitfield<3,1> {};
 		struct NEA        : Bitfield<2,1> {};
 		struct MS         : Bitfield<1,1> {};
-		struct RW         : Bitfield<0,1> {};
+		struct RW         : Bitfield<0,1> {
+			enum {
+				SENDING = 0,
+				RECEIVING = 1,
+			};
+		};
 	};
 
 	struct Status : Register<0x4, 16>
@@ -97,8 +85,12 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 		struct DATA : Bitfield<0,8> {};
 	};
 
-	struct Interrupt_status : Register<0x10, 16>
+	template <unsigned OFFSET, unsigned SIZE>
+	struct Interrupt_register : Register<OFFSET, SIZE>
 	{
+		template <unsigned POS, unsigned BIT>
+		using Bitfield = typename Register<OFFSET,SIZE>::template Bitfield<POS,BIT>;
+
 		struct ARB_LOST : Bitfield<9,1> {};
 		struct RX_UNF   : Bitfield<7,1> {};
 		struct TX_OVF   : Bitfield<6,1> {};
@@ -109,6 +101,8 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 		struct DATA     : Bitfield<1,1> {};
 		struct COMP     : Bitfield<0,1> {};
 	};
+
+	struct Interrupt_status : Interrupt_register<0x10, 16> { };
 
 	struct Transfer_size : Register<0x14, 8>
 	{
@@ -125,44 +119,11 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 		struct TO : Bitfield<0,8> {};
 	};
 
-	struct Interrupt_mask : Register<0x20, 16>
-	{
-		struct ARB_LOST : Bitfield<9,1> {};
-		struct RX_UNF   : Bitfield<7,1> {};
-		struct TX_OVF   : Bitfield<6,1> {};
-		struct RX_OVF   : Bitfield<5,1> {};
-		struct SLV_RDY  : Bitfield<4,1> {};
-		struct TO       : Bitfield<3,1> {};
-		struct NACK     : Bitfield<2,1> {};
-		struct DATA     : Bitfield<1,1> {};
-		struct COMP     : Bitfield<0,1> {};
-	};
+	struct Interrupt_mask : Interrupt_register<0x20, 16> { };
 
-	struct Interrupt_enable : Register<0x24, 16>
-	{
-		struct ARB_LOST : Bitfield<9,1> {};
-		struct RX_UNF   : Bitfield<7,1> {};
-		struct TX_OVF   : Bitfield<6,1> {};
-		struct RX_OVF   : Bitfield<5,1> {};
-		struct SLV_RDY  : Bitfield<4,1> {};
-		struct TO       : Bitfield<3,1> {};
-		struct NACK     : Bitfield<2,1> {};
-		struct DATA     : Bitfield<1,1> {};
-		struct COMP     : Bitfield<0,1> {};
-	};
+	struct Interrupt_enable : Interrupt_register<0x24, 16> { };
 
-	struct Interrupt_disable : Register<0x28, 16>
-	{
-		struct ARB_LOST : Bitfield<9,1> {};
-		struct RX_UNF   : Bitfield<7,1> {};
-		struct TX_OVF   : Bitfield<6,1> {};
-		struct RX_OVF   : Bitfield<5,1> {};
-		struct SLV_RDY  : Bitfield<4,1> {};
-		struct TO       : Bitfield<3,1> {};
-		struct NACK     : Bitfield<2,1> {};
-		struct DATA     : Bitfield<1,1> {};
-		struct COMP     : Bitfield<0,1> {};
-	};
+	struct Interrupt_disable : Interrupt_register<0x28, 16> { };
 
 
 	Timer::Connection _timer;
@@ -223,12 +184,14 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 		/*
 		 * Init sending master.
 		 */
-		set_direction(SENDING);
+		set_direction(Control::RW::SENDING);
 
 		/*
 		 * intrs keeps all the error-related interrupts.
 		 */
-		intrs = INTERRUPT_ARB_LOST_MASK | INTERRUPT_TX_OVR_MASK | INTERRUPT_NACK_MASK;
+		intrs = Interrupt_status::ARB_LOST::reg_mask() | 
+		        Interrupt_status::TX_OVF::reg_mask() |
+				  Interrupt_status::NACK::reg_mask();
 		
 		/*
 		 * Clear the interrupt status register before use it to monitor.
@@ -265,7 +228,7 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 		/*
 		 * Check for completion of transfer.
 		 */
-		while ((intrStatusReg & INTERRUPT_COMP_MASK) != INTERRUPT_COMP_MASK)
+		while ((intrStatusReg & Interrupt_status::COMP::reg_mask()) == 0)
 		{
 
 			intrStatusReg = read<Interrupt_status>();
@@ -291,7 +254,7 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 		/*
 		 * Init receiving master.
 		 */
-		set_direction(RECEIVING);
+		set_direction(Control::RW::RECEIVING);
 
 		/*
 		 * Clear the interrupt status register before use it to monitor.
@@ -312,8 +275,10 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 		/*
 		 * intrs keeps all the error-related interrupts.
 		 */
-		intrs = INTERRUPT_ARB_LOST_MASK | INTERRUPT_RX_OVR_MASK | 
-			INTERRUPT_RX_UNF_MASK | INTERRUPT_NACK_MASK;
+		intrs = Interrupt_status::ARB_LOST::reg_mask() | 
+		        Interrupt_status::RX_OVF::reg_mask() |
+		        Interrupt_status::RX_UNF::reg_mask() |
+				  Interrupt_status::NACK::reg_mask();
 
 		/*
 		 * Poll the interrupt status register to find the errors.

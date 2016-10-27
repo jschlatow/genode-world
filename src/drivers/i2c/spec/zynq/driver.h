@@ -37,7 +37,10 @@ class I2C::Driver
 
 		public:
 
-			I2C_bank(Genode::addr_t base, Genode::size_t size) : _i2c(base, size) {	}
+			I2C_bank(Genode::addr_t base, Genode::size_t size) : _i2c(base, size)
+			{
+				_i2c.init();
+			}
 
 			Zynq_I2C* regs() { return &_i2c; }
 		};
@@ -52,15 +55,16 @@ class I2C::Driver
 
 		bool read_byte_8bit_reg(unsigned bus, Genode::uint8_t adr, Genode::uint8_t reg, Genode::uint8_t *data)
 		{
+			int status;
 			Zynq_I2C *i2c_reg = _i2c_bank[bus].regs();
-			if (i2c_reg->i2c_write(adr, &reg, 1) != 0) 
+			if ((status = i2c_reg->i2c_write(adr, &reg, 1, true)) != 0) 
 			{
-				Genode::error("Zynq i2c: write failed");
+				Genode::error("Zynq i2c: write failed (", status, ")");
 				return false;
 			}
-			if (i2c_reg->i2c_read_byte(adr, data) != 0) 
+			if ((status = i2c_reg->i2c_read_byte(adr, data)) != 0) 
 			{
-				Genode::error("Zynq i2c: read failed");
+				Genode::error("Zynq i2c: read failed (", status, ")");
 				return false;
 			}
 			return true;

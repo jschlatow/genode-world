@@ -169,15 +169,20 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 	int sendByteCount;
 	uint8_t *sendBufferPtr;
 
-	void init(int direction)
+	void init()
 	{
-		write<Control>(	Control::divisor_a::bits(2) |
+		write<Control>(Control::divisor_a::bits(2) |
 				Control::divisor_b::bits(16) |
 				Control::ACK_EN::bits(1) |
 				Control::CLR_FIFO::bits(1) |
 				Control::NEA::bits(1) |
 				Control::MS::bits(1));
-	write<Control::RW>(direction);
+	}
+
+	void set_direction(int direction)
+	{
+		write<Control::CLR_FIFO>(1);
+		write<Control::RW>(direction);
 	}
 
 	void transmitFifoFill()
@@ -203,7 +208,7 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 		}
 	}
 
-	int i2c_write(uint8_t slaveAddr, uint8_t *msgPtr, int byteCount)
+	int i2c_write(uint8_t slaveAddr, uint8_t *msgPtr, int byteCount, bool hold=false)
 	{
 		uint32_t intrs, intrStatusReg;
 
@@ -211,14 +216,14 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 		sendBufferPtr = msgPtr;
 
 		/*
-		 * Set HOLD bit if byteCount is bigger than FIFO.
+		 * Set HOLD bit if byteCount is bigger than FIFO or HOLD is forced
 		 */
-		if (byteCount > I2C_FIFO_DEPTH) write<Control::HOLD>(1);
+		if (byteCount > I2C_FIFO_DEPTH || hold) write<Control::HOLD>(1);
 
 		/*
 		 * Init sending master.
 		 */
-		init(SENDING);
+		set_direction(SENDING);
 
 		/*
 		 * intrs keeps all the error-related interrupts.
@@ -273,7 +278,8 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 			}
 		}
 
-		write<Control::HOLD>(0);
+		if (!hold)
+			write<Control::HOLD>(0);
 
 		return 0;
 	}
@@ -285,7 +291,7 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 		/*
 		 * Init receiving master.
 		 */
-		init(RECEIVING);
+		set_direction(RECEIVING);
 
 		/*
 		 * Clear the interrupt status register before use it to monitor.

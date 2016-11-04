@@ -66,6 +66,7 @@ class Vdma::Session_component : public Genode::Rpc_object<Vdma::Session>
 		{
 			return _driver.setAddr(_number, data, isMM2S);
 		}
+
 };
 
 
@@ -110,22 +111,25 @@ int main(int, char **)
 	 * Read config
 	 */
 	std::vector<Genode::addr_t> addr;
+    addr.push_back(0x43000000);
 
-	try {
-		Genode::Xml_node vdma_node = Genode::config()->xml_node().sub_node("vdma");
-
-		for (unsigned i = 0; ;i++, vdma_node = vdma_node.next("vdma"))
-		{
-			addr.push_back(0);
-			vdma_node.attribute("addr").value(&addr[i]);
-			Genode::log("VDMA with mio address ", Genode::Hex(addr[i]), " added.");
-
-			if (vdma_node.is_last("vdma")) break;
-		}
-	}
-	catch (Genode::Xml_node::Nonexistent_sub_node) {
-		Genode::warning("No VDMA config");
-	}
+/*
+ *    try {
+ *        Genode::Xml_node vdma_node = Genode::config()->xml_node().sub_node("vdma");
+ *
+ *        for (unsigned i = 0; ;i++, vdma_node = vdma_node.next("vdma"))
+ *        {
+ *            addr.push_back(0);
+ *            vdma_node.attribute("addr").value(&addr[i]);
+ *            Genode::log("VDMA with mio address ", Genode::Hex(addr[i]), " added.");
+ *
+ *            if (vdma_node.is_last("vdma")) break;
+ *        }
+ *    }
+ *    catch (Genode::Xml_node::Nonexistent_sub_node) {
+ *        Genode::warning("No VDMA config");
+ *    }
+ */
 
 	/*
 	 * Create Driver
@@ -146,6 +150,7 @@ int main(int, char **)
 	 * Announce service
 	 */
 	env()->parent()->announce(ep.manage(&vdma_root));
+    Genode::log("Nach env()->parent()-announce()");
 
 	Genode::sleep_forever();
 	return 0;

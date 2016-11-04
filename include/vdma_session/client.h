@@ -14,7 +14,7 @@
 #ifndef _INCLUDE__VDMA_SESSION_H__CLIENT_H_
 #define _INCLUDE__VDMA_SESSION_H__CLIENT_H_
 
-#include <vdma_session/zynq/capability.h>
+#include <vdma_session/capability.h>
 #include <base/rpc_client.h>
 
 #define S2MM false

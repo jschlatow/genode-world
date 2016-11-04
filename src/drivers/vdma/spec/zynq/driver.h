@@ -56,9 +56,35 @@ class Vdma::Driver
 
         bool setConfig(unsigned vdma, Genode::uint32_t data, bool isMM2S)
         {
+            Genode::log("VDMA");
             Zynq_Vdma *vdma_reg = _vdma_bank[vdma];
             if (isMM2S) vdma_reg->write<Zynq_Vdma::MM2S_VDMACR>(data);
             else vdma_reg->write<Zynq_Vdma::S2MM_VDMACR>(data);
+
+            uint32_t control = vdma_reg->read<Zynq_Vdma::MM2S_VDMACR>();
+            Genode::log("Control ", Genode::Hex(control));
+
+            uint32_t status = vdma_reg->read<Zynq_Vdma::MM2S_VDMASR>();
+            Genode::log("Status ", Genode::Hex(status));
+
+            if (isMM2S) {
+                uint32_t fb = 0;
+                fb = vdma_reg->read<Zynq_Vdma::Framebuffer>(0);
+
+                Genode::log("Framebuffer 1 ", Genode::Hex(fb));
+                fb = vdma_reg->read<Zynq_Vdma::Framebuffer>(1);
+                Genode::log("Framebuffer 2 ", Genode::Hex(fb));
+                fb = vdma_reg->read<Zynq_Vdma::Framebuffer>(2);
+                Genode::log("Framebuffer 3 ", Genode::Hex(fb));
+                fb = vdma_reg->read<Zynq_Vdma::Framebuffer>(3);
+                Genode::log("Framebuffer 4 ", Genode::Hex(fb));
+                vdma_reg->write<Zynq_Vdma::Framebuffer>(data, 0);
+                vdma_reg->write<Zynq_Vdma::Framebuffer>(data, 1);
+                vdma_reg->write<Zynq_Vdma::Framebuffer>(data, 2);
+                vdma_reg->write<Zynq_Vdma::Framebuffer>(data, 3);
+                vdma_reg->write<Zynq_Vdma::MM2S_START_ADDRESS>(data);
+            }
+
             return true;
         }
 
@@ -86,11 +112,16 @@ class Vdma::Driver
             return true;
         }
 
-
         bool setAddr(unsigned vdma, Genode::uint32_t data, bool isMM2S)
         {
             Zynq_Vdma *vdma_reg = _vdma_bank[vdma];
-            if (isMM2S) vdma_reg->write<Zynq_Vdma::MM2S_START_ADDRESS>(data);
+            if (isMM2S) {
+                vdma_reg->write<Zynq_Vdma::Framebuffer>(data, 0);
+                vdma_reg->write<Zynq_Vdma::Framebuffer>(data, 1);
+                vdma_reg->write<Zynq_Vdma::Framebuffer>(data, 2);
+                vdma_reg->write<Zynq_Vdma::Framebuffer>(data, 3);
+                //vdma_reg->write<Zynq_Vdma::MM2S_START_ADDRESS>(data);
+            }
             else vdma_reg->write<Zynq_Vdma::S2MM_START_ADDRESS>(data);
             return true;
         }

@@ -89,7 +89,7 @@ struct I2C::Zynq_I2C : Attached_io_mem_dataspace, Mmio
 	struct Interrupt_register : Register<OFFSET, SIZE>
 	{
 		template <unsigned POS, unsigned BIT>
-		using Bitfield = typename Register<OFFSET,SIZE>::template Bitfield<POS,BIT>;
+		using Bitfield = typename Register<OFFSET, SIZE>::template Bitfield<POS, BIT>;
 
 		struct ARB_LOST : Bitfield<9,1> {};
 		struct RX_UNF   : Bitfield<7,1> {};

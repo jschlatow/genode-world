@@ -14,7 +14,7 @@
 #ifndef _INCLUDE__VDMA_SESSION__CONNECTION_H_
 #define _INCLUDE__VDMA_SESSION__CONNECTION_H_
 
-#include <vdma_session/zynq/client.h>
+#include <vdma_session/client.h>
 #include <base/connection.h>
 
 namespace Vdma {

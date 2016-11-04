@@ -38,14 +38,14 @@ struct Vdma::Zynq_Vdma : Attached_io_mem_dataspace, Mmio
 
     struct MM2S_VDMACR : Register<0x00, 32>
     {
-        struct Repeat_En : Bitfield<15,1> {};
-        struct Err_IrqEn : Bitfield<14,1> {};
-        struct RdPntrNum : Bitfield<8,4> {};
-        struct GenlockSrc : Bitfield<7,1> {};
-        struct GenlockEn : Bitfield<3,1> {};
-        struct Reset : Bitfield<2,1> {};
+        struct Repeat_En     : Bitfield<15,1> {};
+        struct Err_IrqEn     : Bitfield<14,1> {};
+        struct RdPntrNum     : Bitfield<8,4> {};
+        struct GenlockSrc    : Bitfield<7,1> {};
+        struct GenlockEn     : Bitfield<3,1> {};
+        struct Reset         : Bitfield<2,1> {};
         struct Circular_Park : Bitfield<1,1> {};
-        struct RS : Bitfield<0,1> {};
+        struct RS            : Bitfield<0,1> {};
     };
 
     struct MM2S_VDMASR : Register<0x04, 32>
@@ -121,6 +121,10 @@ struct Vdma::Zynq_Vdma : Attached_io_mem_dataspace, Mmio
     {
         struct Frame_Delay : Bitfield<24,5> {};
         struct Stride : Bitfield<0,16> {};
+    };
+
+    struct  Framebuffer : Register_array<0x5c, 32, 4, 32> {
+        struct START_ADDRESS : Bitfield<0x0, 32> {};
     };
 
     struct MM2S_START_ADDRESS : Register<0x5c, 32> {};

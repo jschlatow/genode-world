@@ -15,7 +15,7 @@
 #define _INCLUDE__VDMA_SESSION__CAPABILITY_H_
 
 #include <base/capability.h>
-#include <vdma_session/zynq/vdma_session.h>
+#include <vdma_session/vdma_session.h>
 
 namespace Vdma { typedef Genode::Capability<Session> Session_capability; }
 

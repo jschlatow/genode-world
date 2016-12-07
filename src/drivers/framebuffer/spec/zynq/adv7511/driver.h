@@ -69,6 +69,7 @@ class Framebuffer::Driver
                 REG_AUDIO_CFG3               = 0x14,
                 REG_I2C_FREQ_ID_CFG          = 0x15,
                 REG_VIDEO_INPUT_CFG1         = 0x16,
+                REG_VIDEO_INPUT_CFG2         = 0x17,
                 REG_PIXEL_REPETITION         = 0x3b,
                 REG_VIC_MANUAL               = 0x3c,
                 REG_VIC_SEND                 = 0x3d,
@@ -94,6 +95,7 @@ class Framebuffer::Driver
                 REG_INT_ENABLE1              = 0x94,
                 REG_INT_ENABLE2              = 0x95,
                 REG_INTERRUPT                = 0x96,
+                REG_INTERRUPT2               = 0x97,
                 REG_INPUT_CLK_DIV            = 0x9d,
                 REG_PLL_STATUS               = 0x9e,
                 REG_HDMI_POWER               = 0xa1,
@@ -137,12 +139,12 @@ class Framebuffer::Driver
             { 0x98, 0x03 },
             { 0x9a, 0xe0 },
             { 0x9c, 0x30 },
-            { 0x9d, 0x61 },
+            { 0x9d, 0x61 }, /* FIXME: only the two LSB are used, i.e. 0x01 should be sufficient (cf. Programming Guide) */
             { 0xa2, 0xa4 },
             { 0xa3, 0xa4 },
             { 0xe0, 0xd0},
             { 0xf9, 0x00 },
-            { 0x55, 0x02 },
+            { 0x55, 0x02 }, /* FIXME: this is not in the Programming Guide */
         };
 
         I2C::Connection i2c;
@@ -264,6 +266,8 @@ class Framebuffer::Driver
                 i2c.write_byte_8bit_reg(hdmi_slave_address, 0x52+(i*8), infoframe[i+1]);
             }
         }
+
+        void dump();
 };
 
 
@@ -275,6 +279,59 @@ Framebuffer::Driver::Driver()
         i2c(0),
         vdma(0)
 { 
+
+}
+
+/* read and print selected registers values for debugging */
+void Framebuffer::Driver::dump()
+{
+    uint8_t value;
+    Genode::log("\n===== Hot Plug and Monitor Sense =====");
+
+    i2c_read_byte(REG_STATUS, &value);
+    Genode::log("HPD state:           ", Genode::Hex(value>>6));
+    Genode::log("Monitor sense state: ", Genode::Hex(value>>5));
+
+    i2c_read_byte(REG_POWER2, &value);
+    Genode::log("HPD Control:         ", Genode::Hex(value>>6));
+
+    Genode::log("\n===== System Monitoring =====");
+
+    i2c_read_byte(REG_INT_ENABLE2, &value);
+    Genode::log("DDC Contr. Error Interrupt Enable: ", Genode::Hex(value>>7));
+
+    i2c_read_byte(REG_INTERRUPT2, &value);
+    Genode::log("DDC Contr. Error Interrupt Status: ", Genode::Hex(value>>7));
+
+    i2c_read_byte(REG_PLL_STATUS, &value);
+    Genode::log("PLL Lock Status:                   ", Genode::Hex(value>>4));
+    
+    i2c_read_byte(REG_DDC_STATUS, &value);
+    Genode::log("DDC Status:                        ", Genode::Hex(value));
+
+    Genode::log("\n===== Video Mode Detection =====");
+
+    i2c_read_byte(REG_VIDEO_INPUT_CFG2, &value);
+    Genode::log("Aspect Ratio: ", Genode::Hex(value));
+
+    i2c_read_byte(REG_VIC_DETECTED, &value);
+    Genode::log("VIC detected: ", Genode::Hex(value>>2));
+
+    i2c_read_byte(REG_VIC_SEND, &value);
+    Genode::log("VIC to Rx:    ", Genode::Hex(value));
+
+    i2c_read_byte(REG_VIC_MANUAL, &value);
+    Genode::log("VIC manual:   ", Genode::Hex(value));
+
+    Genode::log("\n===== Input Formatting =====");
+
+    i2c_read_byte(REG_I2C_FREQ_ID_CFG, &value);
+    Genode::log("Input ID:      ", Genode::Hex(value));
+
+    i2c_read_byte(REG_VIDEO_INPUT_CFG1, &value);
+    Genode::log("Output Format: ", Genode::Hex(value));
+    Genode::log("Color Depth:   ", Genode::Hex(value));
+    Genode::log("Input Style:   ", Genode::Hex(value));
 
 }
 
@@ -347,6 +404,7 @@ bool Framebuffer::Driver::init(size_t width, size_t height,
 
     i2c_update_bits(REG_I2C_FREQ_ID_CFG,0xf, 0x1);
 
+    /* FIXME: 0x00 at 0x16[5:4] is invalid */
     i2c_update_bits(REG_VIDEO_INPUT_CFG1, 0x7e, (0x0 << 4) | (0x2 << 2));
 
     i2c_write_byte(REG_VIDEO_INPUT_CFG2, (0x0 << 6));
@@ -359,7 +417,7 @@ bool Framebuffer::Driver::init(size_t width, size_t height,
     drop_interrupts();
 
     i2c_write_byte(0x3c, 0x10); // VIC manual 1080p 60hz 16:9
-    i2c_write_byte(0xd5, 1);
+    i2c_write_byte(0xd5, 1); /* double refresh rate for VIC detection */
     // ###################### IMPORTANT STUFF ##############################
     // Packet enable Infoframe
     //uint8_t avi_ctrl = 0;
@@ -377,7 +435,7 @@ bool Framebuffer::Driver::init(size_t width, size_t height,
     //i2c_write_byte(REG_VIDEO_INPUT_CFG1, 0x89); // colorspace ycbcr
     i2c_write_byte(REG_AVI_INFOFRAME, 0x22); // set output format, should be written after 0x16 Register
 
-    i2c_write_byte(REG_HDCP_HDMI_CFG, 0x16); 
+    i2c_write_byte(REG_HDCP_HDMI_CFG, 0x16); /* HDMI Mode, HDCP Disabled, Current Frame HDCP Encrypted */
 
     // Packet disable Infoframe
     avi_infoframe_status = 0;
@@ -389,6 +447,7 @@ bool Framebuffer::Driver::init(size_t width, size_t height,
 
     // end of avi infoframe
    
+    dump();
     
     for (int i = 0; i <= 0xff; i++) {
         uint8_t value = 0;

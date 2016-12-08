@@ -112,6 +112,11 @@ int main(int, char **)
 	 */
 	std::vector<Genode::addr_t> addr;
     addr.push_back(0x43000000);
+<<<<<<< HEAD
+=======
+    //addr.push_back(0x6c000000);
+    //addr.push_back(0x6c000000);
+>>>>>>> a5c260002fb460bb94e34b55fb5d90b5710d29b7
 
 /*
  *    try {

@@ -1,8 +1,8 @@
 #include <base/log.h>
 
-#include <i2c_session/connection.h>
-
 #include <drivers/board_base.h>
+#include <drivers/i2c.h>
+#include <drivers/adv7511.h>
 
 using namespace Genode;
 
@@ -13,22 +13,16 @@ struct Config {
 	};
 };
 
-void dump_registers(I2C::Connection &i2c, uint8_t slave_address)
-{
-	for (int i=0x00; i < 0xFE; i++) {
-		uint8_t data;
-		i2c.read_byte_8bit_reg(slave_address, i, &data);
-		Genode::log("Register ", Hex(i), " value: ", Hex(data));
-	}
-}
-
 int main()
 {
-	I2C::Connection i2c(0);
+	I2c_driver driver(Board_base::I2C0_MMIO_BASE, Board_base::I2C_MMIO_SIZE);
+	Adv7511 adv7511(Config::ADV7511_ADDR_1, driver);
+
 
 	Genode::log("\nTesting ADV7511 interface on address ", Hex(Config::ADV7511_ADDR_1), 
 					" via I2C controller at: ", Hex(Board_base::I2C0_MMIO_BASE));
-	dump_registers(i2c, Config::ADV7511_ADDR_1);
+
+	adv7511.dump_registers();
 
 	return 0;
 }

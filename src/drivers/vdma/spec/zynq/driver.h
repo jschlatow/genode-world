@@ -69,6 +69,7 @@ class Vdma::Driver
 
             if (isMM2S) {
                 uint32_t fb = 0;
+                uint32_t status = 0;
                 fb = vdma_reg->read<Zynq_Vdma::Framebuffer>(0);
 
                 Genode::log("Framebuffer 1 ", Genode::Hex(fb));
@@ -78,6 +79,7 @@ class Vdma::Driver
                 Genode::log("Framebuffer 3 ", Genode::Hex(fb));
                 fb = vdma_reg->read<Zynq_Vdma::Framebuffer>(3);
                 Genode::log("Framebuffer 4 ", Genode::Hex(fb));
+
                 vdma_reg->write<Zynq_Vdma::Framebuffer>(data, 0);
                 vdma_reg->write<Zynq_Vdma::Framebuffer>(data, 1);
                 vdma_reg->write<Zynq_Vdma::Framebuffer>(data, 2);

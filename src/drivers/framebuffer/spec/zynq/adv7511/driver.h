@@ -134,20 +134,20 @@ class Framebuffer::Driver
             uint8_t value;
         };
         // stolen from the linux kernel
-        struct register_seq fixed_register[10] = {
+        struct register_seq fixed_register[8] = {
             { 0x98, 0x03 },
             { 0x9a, 0xe0 },
             { 0x9c, 0x30 },
-            { 0x9d, 0x61 }, /* FIXME: only the two LSB are used, i.e. 0x01 should be sufficient (cf. Programming Guide) */
+            { 0x9d, 0x01 },
             { 0xa2, 0xa4 },
             { 0xa3, 0xa4 },
             { 0xe0, 0xd0},
-            { 0xf9, 0x00 },
-            { 0x55, 0x02 }, /* FIXME: this is not in the Programming Guide */
+            { 0xf9, 0x00 }
         };
 
         I2C::Connection i2c;
         Vdma::Connection vdma;
+        Axi_hdmi axi_hdmi;
 
         bool i2c_read_byte(const uint8_t reg, uint8_t *data) {
             return i2c.read_byte_8bit_reg(hdmi_slave_address, reg, data);
@@ -161,40 +161,6 @@ class Framebuffer::Driver
             tmp = org & ~mask;
             tmp |= val & mask;
             i2c_write_byte(reg, val);
-        };
-
-        void drop_interrupts() {
-            uint8_t irq0, irq1;
-            i2c_read_byte(0x96, &irq0);
-            i2c_update_bits(0x96, 0x0, 0x20);
-            i2c_read_byte(0x97, &irq1);
-        };
-
-        const uint16_t coeff[12] = {
-            0x0734, 0x04ad, 0x0000, 0x1c1b,
-            0x1ddc, 0x04ad, 0x1f24, 0x0135,
-            0x0000, 0x04ad, 0x087c, 0x1b77,
-        };
-
-        void set_color_map(bool enable=false) {
-            // CSC_UPPER(i) = 0x18 + 2 * i;
-            i2c_update_bits(0x18+2, BIT(5), BIT(5));
-
-            if (enable) {
-                for (int i = 0; i < 12; ++i) {
-                    i2c_update_bits(0x18 + i * 2,
-                            0x1f, coeff[i] >> 8);
-                    i2c_write_byte(0x19 + i * 2,
-                            coeff[i] & 0xff);
-                }
-            }
-
-            if (enable)
-                i2c_update_bits(0x18, 0xe0, 0x80);
-            else
-                i2c_update_bits(0x18, 0x80, 0x00);
-
-            i2c_update_bits(0x18 + 2, BIT(5), 0);
         };
 
         void packet_enable(uint16_t packet) {
@@ -216,14 +182,6 @@ class Framebuffer::Driver
             }
         };
 
-        void set_config_csc(bool rgb=false) {
-            // scaling_faktor = ADV7511_CSC_SCALING_4
-            avi_infoframe.scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
-            avi_infoframe.colorspace = HDMI_COLORSPACE_YUV422;
-
-        };
-
-
     public:
 
         Driver();
@@ -236,8 +194,7 @@ class Framebuffer::Driver
             return 0;
         }
 
-        size_t buffer_size(size_t width, size_t height, Format format)
-        {
+        size_t buffer_size(size_t width, size_t height, Format format) {
             return bytes_per_pixel(format)*width*height;
         }
 
@@ -246,7 +203,7 @@ class Framebuffer::Driver
 
         void set_fixed_register() {
             struct register_seq *r = nullptr;
-            for(size_t i = 0; i < 10; i++) {
+            for(size_t i = 0; i < 8; i++) {
                 r = &(fixed_register[i]);
                 i2c.write_byte_8bit_reg(hdmi_slave_address, r->reg, r->value);
             }
@@ -259,10 +216,10 @@ class Framebuffer::Driver
 
             config.scan_mode  = HDMI_SCAN_MODE_UNDERSCAN;
             config.colorspace = HDMI_COLORSPACE_YUV422;
-
             hdmi_avi_infoframe_pack(&config, infoframe, sizeof(infoframe));
-            for (int i = 0; i < sizeof(infoframe)-2; i++) {
-                i2c.write_byte_8bit_reg(hdmi_slave_address, 0x52+(i*8), infoframe[i+1]);
+
+            for (int i = 1; i < sizeof(infoframe); i++) {
+                i2c.write_byte_8bit_reg(hdmi_slave_address, 0x52+(i*8), infoframe[i]);
             }
         }
         void dump();
@@ -275,12 +232,15 @@ Framebuffer::Driver::Driver()
         _fb_height(0),
         _fb_format(FORMAT_RGB565),
         i2c(0),
-        vdma(0)
+        vdma(0),
+        axi_hdmi(0x6c000000, 0x1000)
 { 
 
 }
+// axi clock 66000000
+// linux axi clock value = 148484847
 
-/* read and print selected registers values for debugging */
+//read and print selected registers values for debugging
 void Framebuffer::Driver::dump()
 {
     uint8_t value;
@@ -344,17 +304,19 @@ bool Framebuffer::Driver::init(size_t width, size_t height,
 
     hdmi_avi_infoframe_init(&avi_infoframe);
 
+    axi_hdmi.start();
+    Genode::log("nach axi_hdmi.start()");
+
     uint32_t addr = (uint32_t) &phys_base;
     vdma.setAddr(addr, true);
-    //Note: A stride value less than MM2S_HSIZE causes data to be corrupted.
-    vdma.setStride((height * 3), true);
 
-    vdma.setHeight((width), true);
+    vdma.setStride((height * 3), true);
     vdma.setWidth((height * 3), true );
-    uint32_t vdma_config = 0x10003;
+    vdma.setHeight((width), true);
+    
+    uint32_t vdma_config = 0x00000003;
     vdma.setConfig(vdma_config, true);
     //end vdma init
-
 
     uint8_t hpd = 0;
     i2c_read_byte(REG_STATUS, &hpd);
@@ -372,10 +334,10 @@ bool Framebuffer::Driver::init(size_t width, size_t height,
 
         if ((status & 0x40) == 0) {
             //Genode::log("still sleeping");
-            break;
         }
         else {
             Genode::log("I AM AWAKE");
+            break;
         }
     }
     set_fixed_register();
@@ -404,7 +366,6 @@ bool Framebuffer::Driver::init(size_t width, size_t height,
 
     i2c_update_bits(REG_I2C_FREQ_ID_CFG,0xf, 0x1);
 
-    /* FIXME: 0x00 at 0x16[5:4] is invalid */
     i2c_update_bits(REG_VIDEO_INPUT_CFG1, 0x7e, (0x0 << 4) | (0x2 << 2));
 
     i2c_write_byte(REG_VIDEO_INPUT_CFG2, (0x0 << 6));
@@ -418,10 +379,11 @@ bool Framebuffer::Driver::init(size_t width, size_t height,
 
     i2c_write_byte(0x3c, 0x10); // VIC manual 1080p 60hz 16:9
     i2c_write_byte(0xd5, 1);
+
+
     // ###################### AVI INFOFRAME ##############################
     // Packet enable Infoframe
     i2c_write_byte(0xd5, 1); /* double refresh rate for VIC detection */
-    // ###################### IMPORTANT STUFF ##############################
     // Packet enable Infoframe
     uint8_t avi_ctrl = 0;
     i2c_read_byte(0x4a, &avi_ctrl);
@@ -454,26 +416,15 @@ bool Framebuffer::Driver::init(size_t width, size_t height,
 
     // ###################### END OF INFOFRAME #############################
 
-    // end of avi infoframe
-   
-    // ###################### END OF IMPORTANT #############################
-
-    // end of avi infoframe
-   
     dump();
     
-    for (int i = 0; i <= 0xff; i++) {
-        uint8_t value = 0;
-        i2c.read_byte_8bit_reg(hdmi_slave_address, i, &value);
-        Genode::log("", Genode::Hex(i), " ", Genode::Hex(value));
-    }
-    //return true;
-    // TODO: besser machen
-    //uint32_t vdma_config = Zynq_Vdma::MM2S_VDMACR::Repeat_En::bits(0)
-        //| Zynq_Vdma::MM2S_VDMACR::Err_IrqEn::bits(0)
-        //| Zynq_Vdma::MM2S_VDMACR::RS::bits(1);
-    //init the vdma stuff
-
+    /*
+     *for (int i = 0; i <= 0xff; i++) {
+     *    uint8_t value = 0;
+     *    i2c.read_byte_8bit_reg(hdmi_slave_address, i, &value);
+     *    Genode::log("", Genode::Hex(i), " ", Genode::Hex(value));
+     *}
+     */
 
     return true;
 

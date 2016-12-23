@@ -80,7 +80,7 @@ struct Axi_hdmi : Attached_io_mem_dataspace, Mmio
         vertical_count            = vertical_active_time + vertical_blanking_time;
     }
 
-    void start() {
+    void start(bool color_pattern=false) {
         write<AXI_HSYNC_1>(AXI_HSYNC_1::H_LINE_ACTIVE::bits(horizontal_active_time) 
                 | AXI_HSYNC_1::H_LINE_WIDTH::bits(horizontal_count));
         write<AXI_HSYNC_2>(AXI_HSYNC_2::H_SYNC_WIDTH::bits(horizontal_sync_pulse_width));
@@ -96,9 +96,13 @@ struct Axi_hdmi : Attached_io_mem_dataspace, Mmio
 
         write<AXI_RESET>(AXI_RESET::RESET::bits(0x1));
         write<AXI_CONTROL_SOURCE>(AXI_CONTROL_SOURCE::FULL_RANGE::bits(0x0));
-        write<AXI_CONTROL_SOURCE>(AXI_CONTROL_SOURCE::FULL_RANGE::bits(0x1));
 
-		  /* FIXME: we must still configure the axi-clkgen core with the pixel clock */
+		  if (color_pattern) {
+			  write<AXI_COLORPATTERN>(0xffff0000);
+			  write<AXI_CONTROL_SOURCE>(AXI_CONTROL_SOURCE::FULL_RANGE::bits(AXI_CONTROL_SOURCE::FULL_RANGE::COLOR_PATTERN));
+		  } else {
+			  write<AXI_CONTROL_SOURCE>(AXI_CONTROL_SOURCE::FULL_RANGE::bits(0x1));
+		  }
     }
 
 
@@ -126,7 +130,7 @@ struct Axi_hdmi : Attached_io_mem_dataspace, Mmio
            };
         };
     };
-    struct AX_COLORPATTERN : Register<0x04c, 32>
+    struct AXI_COLORPATTERN : Register<0x04c, 32>
     {
        struct RAW : Bitfield<0, 32> {};
     };

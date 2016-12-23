@@ -25,6 +25,7 @@
 
 #include "infoframe.h"
 #include "axi-hdmi.h"
+#include "axi-clkgen.h"
 using namespace Vdma;
 
 
@@ -121,8 +122,8 @@ class Framebuffer::Driver
         };
 
     private:
-        size_t _fb_width;
-        size_t _fb_height;
+        Genode::size_t _fb_width;
+        Genode::size_t _fb_height;
 
         Format _fb_format;
         const uint8_t hdmi_slave_address = 0x39;
@@ -148,6 +149,7 @@ class Framebuffer::Driver
         I2C::Connection i2c;
         Vdma::Connection vdma;
         Axi_hdmi axi_hdmi;
+        Axi_clkgen axi_clkgen;
 
         bool i2c_read_byte(const uint8_t reg, uint8_t *data) {
             return i2c.read_byte_8bit_reg(hdmi_slave_address, reg, data);
@@ -161,6 +163,8 @@ class Framebuffer::Driver
             tmp = org & ~mask;
             tmp |= val & mask;
             i2c_write_byte(reg, val);
+
+            return true;
         };
 
         void packet_enable(uint16_t packet) {
@@ -186,7 +190,7 @@ class Framebuffer::Driver
 
         Driver();
 
-        static size_t bytes_per_pixel(Format format)
+        static Genode::size_t bytes_per_pixel(Format format)
         {
             switch (format) {
                 case FORMAT_RGB565: return 24;
@@ -194,16 +198,16 @@ class Framebuffer::Driver
             return 0;
         }
 
-        size_t buffer_size(size_t width, size_t height, Format format) {
+        Genode::size_t buffer_size(Genode::size_t width, Genode::size_t height, Format format) {
             return bytes_per_pixel(format)*width*height;
         }
 
-        bool init(size_t width, size_t height, Format format,
+        bool init(Genode::size_t width, Genode::size_t height, Format format,
                 Output output, addr_t phys_base);
 
         void set_fixed_register() {
             struct register_seq *r = nullptr;
-            for(size_t i = 0; i < 8; i++) {
+            for(Genode::size_t i = 0; i < 8; i++) {
                 r = &(fixed_register[i]);
                 i2c.write_byte_8bit_reg(hdmi_slave_address, r->reg, r->value);
             }
@@ -233,7 +237,8 @@ Framebuffer::Driver::Driver()
         _fb_format(FORMAT_RGB565),
         i2c(0),
         vdma(0),
-        axi_hdmi(0x6c000000, 0x1000)
+        axi_hdmi(0x6c000000, 0x1000),    /* FIXME: add to board_base.h */
+        axi_clkgen(0x66000000, 0x1000) /* FIXME: add to board_base.h */
 { 
 
 }
@@ -293,7 +298,7 @@ void Framebuffer::Driver::dump()
 
 }
 
-bool Framebuffer::Driver::init(size_t width, size_t height,
+bool Framebuffer::Driver::init(Genode::size_t width, Genode::size_t height,
         Framebuffer::Driver::Format format,
         Output output,
         Framebuffer::addr_t phys_base)
@@ -304,7 +309,11 @@ bool Framebuffer::Driver::init(size_t width, size_t height,
 
     hdmi_avi_infoframe_init(&avi_infoframe);
 
-    axi_hdmi.start();
+    /* set pixel clock */
+    axi_clkgen.set_rate(148500000, 200000000);
+    Genode::log("nach axi_clkgen.start()");
+
+    axi_hdmi.start(true);
     Genode::log("nach axi_hdmi.start()");
 
     uint32_t addr = (uint32_t) &phys_base;

@@ -24,8 +24,8 @@
 #include <vdma_session/connection.h>
 
 #include "infoframe.h"
-#include "axi-hdmi.h"
-#include "axi-clkgen.h"
+#include <drivers/axi-hdmi.h>
+#include <drivers/axi-clkgen.h>
 using namespace Vdma;
 
 

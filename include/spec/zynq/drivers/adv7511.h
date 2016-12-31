@@ -21,9 +21,8 @@ namespace Genode {
     class Adv7511;
 }
 
-class Genode::Adv7511 : Genode::I2c<Genode::I2c_driver, 1>
+struct Genode::Adv7511 : Genode::I2c<Genode::I2c_driver, 1>
 {
-	public:
 		Adv7511(Genode::addr_t const slave_addr, I2c_driver &driver)
 			: I2c(slave_addr, driver)
 		{ }
@@ -79,6 +78,67 @@ class Genode::Adv7511 : Genode::I2c<Genode::I2c_driver, 1>
 				};
 			};
 		};
+
+		struct Input_cfg2 : Register<0x17, 8> {
+			struct Aspect_ratio : Bitfield<1, 1> {
+				enum {
+					ASPECT_4_3 = 0,
+					ASPECT_16_9 = 1,
+				};
+			};
+		};
+
+		struct Vic : Register<0x3c, 8> { };
+
+		struct Power : Register<0x41, 8> {
+			struct Down : Bitfield<6, 1> { };
+		};
+
+		struct Status : Register<0x42, 8> {
+			struct Hpd   : Bitfield<6, 1> { };
+			struct Sense : Bitfield<5, 1> { };
+		};
+
+		struct Video_cfg2 : Register<0x48, 8> {
+			struct Bus_order : Bitfield<6, 1> {
+				enum {
+					NORMAL = 0,
+					REVERSE = 1,
+				};
+			};
+		};
+
+		struct Power2 : Register<0xd6, 8> {
+			struct Hdp : Bitfield<6, 2> { };
+		};
+
+		struct Input_clk_div : Register<0x9d, 8> { };
+
+		struct Cfg1 : Register<0xba, 8> {
+			struct Clock_delay : Bitfield<5, 3> {
+				enum {
+					NO_DELAY = 0x3,
+				};
+			};
+		};
+
+		struct Timing : Register<0xd0, 8> {
+			struct Sync_pulse : Bitfield<2, 2> {
+				enum {
+					NO_SYNC = 0,
+				};
+			};
+		};
+
+		struct Tmds : Register<0xd3, 8> {
+			struct Inversion : Bitfield<3, 1> { };
+		};
+
+		struct Timing2 : Register<0xfb, 8> {
+			struct Low_refresh : Bitfield<1, 2> { };
+		};
+
+		struct Cec_ctrl : Register<0xe2, 8> { };
 
 		void dump_registers() {
 			Genode::log("\n===== I2C register dump =====");

@@ -28,7 +28,8 @@ class Genode::Mmcm_base
 		/**
 		 * Write 16bit MMCM register 'reg'
 		 */
-		inline void _write(off_t const &reg, uint16_t const &value) const
+		template<typename ACCESS_T>
+		inline void _write(off_t const &reg, ACCESS_T const &value) const
 		{
 			_driver.mmcm_write(reg, value);
 		}
@@ -36,9 +37,10 @@ class Genode::Mmcm_base
 		/**
 		 * Read 16bit MMCM register 'reg'
 		 */
-		inline uint16_t _read(off_t const &reg) const
+		template<typename ACCESS_T>
+		inline ACCESS_T _read(off_t const &reg) const
 		{
-			uint16_t value;
+			ACCESS_T value;
 			/* FIXME deal with errors */
 			_driver.mmcm_read(reg, &value);
 			return value;

@@ -81,6 +81,8 @@ struct Axi_hdmi : Attached_io_mem_dataspace, Mmio
     }
 
     void start(bool color_pattern=false) {
+        dump();
+
         write<AXI_HSYNC_1>(AXI_HSYNC_1::H_LINE_ACTIVE::bits(horizontal_active_time) 
                 | AXI_HSYNC_1::H_LINE_WIDTH::bits(horizontal_count));
         write<AXI_HSYNC_2>(AXI_HSYNC_2::H_SYNC_WIDTH::bits(horizontal_sync_pulse_width));
@@ -94,6 +96,7 @@ struct Axi_hdmi : Attached_io_mem_dataspace, Mmio
                 | AXI_VSYNC_3::H_ENABLE_MIN::bits(horizontal_enable_min));
 
 
+        write<AXI_RESET>(AXI_RESET::RESET::bits(0x0));
         write<AXI_RESET>(AXI_RESET::RESET::bits(0x1));
         write<AXI_CONTROL_SOURCE>(AXI_CONTROL_SOURCE::FULL_RANGE::bits(0x0));
 
@@ -104,6 +107,11 @@ struct Axi_hdmi : Attached_io_mem_dataspace, Mmio
 			  write<AXI_CONTROL_SOURCE>(AXI_CONTROL_SOURCE::FULL_RANGE::bits(0x1));
 		  }
     }
+
+	 void dump() {
+		 Genode::log("Version:     ", Genode::Hex(read<AXI_VERSION::VERSION>()));
+		 Genode::log("VDMA status: ", Genode::Hex(read<VDMA_STATUS>()));
+	 }
 
 
     private:

@@ -99,11 +99,71 @@ struct Genode::Adv7511 : Genode::I2c<Genode::I2c_driver, 1>
 			struct Sense : Bitfield<5, 1> { };
 		};
 
+		struct Avi_status : Register<0x44, 8> {
+			struct Infoframe_enable : Bitfield<4, 1> { };
+		};
+
+		struct Avi_packet : Register<0x4a, 8> {
+			struct Update : Bitfield<6, 1> { };
+
+			struct Checksum : Bitfield<7, 1> {
+				enum {
+					MANUAL = 0,
+					AUTO = 1,
+				};
+			};
+		};
+
 		struct Video_cfg2 : Register<0x48, 8> {
 			struct Bus_order : Bitfield<6, 1> {
 				enum {
 					NORMAL = 0,
 					REVERSE = 1,
+				};
+			};
+		};
+
+		struct Avi_infoframe1 : Register<0x55, 8> {
+			struct Y1Y0 : Bitfield<5, 2> {
+				enum {
+					RGB = 0,
+					YCBCR_422 = 1,
+					YCBCR_444 = 2
+				};
+			};
+		};
+
+		struct Avi_infoframe2 : Register<0x56, 8> {
+			struct Aspect_ratio : Bitfield<4, 2> {
+				enum {
+					ASPECT_4_3 = 1,
+					ASPECT_16_9 = 2,
+				};
+			};
+		};
+
+		struct Ddc : Register<0xc8, 8> {
+			struct Status : Bitfield<0, 4> {
+				enum {
+					IN_RESET = 0,
+					READ_EDID = 1,
+					IDLE = 2,
+					INIT_HDCP = 3,
+					HDCP_ENABLED = 4,
+					INIT_HDCP_RPEAT = 5,
+				};
+			};
+			struct Error : Bitfield<4, 4> {
+				enum {
+					NO_ERROR = 0,
+					BAD_BKSV = 1,
+					RI_MISMTACH = 2,
+					PJ_MISMATCH = 3,
+					I2C_ERROR  = 4,
+					TIMEOUT = 5,
+					MAX_REPEATERS = 6,
+					HASH_FAILED = 7,
+					MAX_DEVICES = 8
 				};
 			};
 		};

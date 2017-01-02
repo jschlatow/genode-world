@@ -31,7 +31,8 @@ class Genode::Mmcm_base
 		template<typename ACCESS_T>
 		inline void _write(off_t const &reg, ACCESS_T const &value) const
 		{
-			_driver.mmcm_write(reg, value);
+			if (!_driver.mmcm_write(reg, value))
+				Genode::error("mmcm_write() timed out");
 		}
 
 		/**
@@ -42,7 +43,8 @@ class Genode::Mmcm_base
 		{
 			ACCESS_T value;
 			/* FIXME deal with errors */
-			_driver.mmcm_read(reg, &value);
+			if (!_driver.mmcm_read(reg, &value))
+				Genode::error("mmcm_read() timed out");
 			return value;
 		}
 
@@ -300,6 +302,8 @@ class Genode::Axi_clkgen : Attached_io_mem_dataspace, Mmio
 
 		/* set rate */
 		void set_rate(unsigned long rate, unsigned long parent_rate);
+
+		void dump();
 };
 
 bool Genode::Axi_clkgen::_mmcm_wait(uint16_t *value)
@@ -394,6 +398,24 @@ void Genode::Axi_clkgen::set_rate(unsigned long rate, unsigned long parent_rate)
 
 	/* enable MMCM */
 	write<Reset::Mmcm_enable>(1);
+}
+
+void Genode::Axi_clkgen::dump()
+{
+	Genode::log("Drp reset status: ", Genode::Hex(read<Reset>()));
+
+	uint16_t value = 0;
+	value = _mmcm.read<Mmcm::Out1_bitset>();
+	Genode::log("Mmcm::Out1_bitset: ", Genode::Hex(value));
+	value = _mmcm.read<Mmcm::Out2::Mask>();
+	Genode::log("Mmcm::Out1::Mask: ", Genode::Hex(value));
+
+	uint32_t filter = 0;
+	filter = _mmcm.read<Mmcm::Filter1_bitset>();
+	filter = filter << 16;
+	filter |= _mmcm.read<Mmcm::Filter2_bitset>();
+
+	Genode::log("Filter: ", Genode::Hex(filter));
 }
 
 #endif /* AXI_CLKGEN_H_ */

@@ -85,20 +85,32 @@ int main()
 	Genode::log("Starting axi-hdmi in COLOR_PATTERN mode");
 	axi_hdmi.start(true);
 
-	dump(adv7511);
+	/* reset transmitter */
+	adv7511.write<Adv7511::Power::Down>(1);
 
-	bool hpd = adv7511.read<Adv7511::Status::Hpd>();
-	Genode::log("HPD ", hpd);
+	dump(adv7511);
 
 	// clear all interrupts
 	adv7511.write<Adv7511::Dump>(0xff, 0x96); // FIXME
 	adv7511.write<Adv7511::Power>(0x10); // set default value
 
-	// force the transmitter to turn on
-	adv7511.write<Adv7511::Power2>((1 << 7) | (1 << 6));
+	// set hot plug control (HPD pin only)
+	adv7511.write<Adv7511::Power2::Hdp>(2);
 
-	while (adv7511.read<Adv7511::Power::Down>()) { }
-	Genode::log("I AM AWAKE");
+	/* wait for HPD */
+	Genode::log("Waiting for hot plug detection");
+	while (!adv7511.read<Adv7511::Status::Hpd>()) { }
+
+	/* reset transmitter */
+	adv7511.write<Adv7511::Power::Down>(0);
+
+	/* wait for monitor sense */
+	Genode::log("Waiting for monitor sense.");
+	while (!adv7511.read<Adv7511::Status::Sense>()) { }
+
+	/* check whether all systems are powered up */
+	if (adv7511.read<Adv7511::Power::Down>())
+		Genode::error("ADV7511 still powered down");
 
 	/* set fixed register values */
 	adv7511.write<Adv7511::Dump>(0x03, 0x98);
@@ -109,14 +121,15 @@ int main()
 	adv7511.write<Adv7511::Dump>(0xa4, 0xa3);
 	adv7511.write<Adv7511::Dump>(0xd0, 0xe0);
 	adv7511.write<Adv7511::Dump>(0x00, 0xf9);
+	adv7511.write<Adv7511::Dump>(0x02, 0x55); /* from linux driver */
 
 	adv7511.write<Adv7511::Dump>(0x0, 0xa1);
 
 	// no audio and 24 bit color
 	adv7511.write<Adv7511::Dump>(0x11, 0x0a);
 
-	/* set HDP to always high */
-	adv7511.write<Adv7511::Power2::Hdp>(0x3);
+//	/* set HDP to always high */
+//	adv7511.write<Adv7511::Power2::Hdp>(0x3);
 
 	adv7511.write<Adv7511::Cec_ctrl>(0x00);
 	adv7511.write<Adv7511::Dump>(0x02, 0xfb); // sync delay stuff
@@ -133,7 +146,7 @@ int main()
 
 	adv7511.write<Adv7511::Timing2::Low_refresh>(0); // no low refresh rate
 	adv7511.write<Adv7511::Cfg1::Clock_delay>(Adv7511::Cfg1::Clock_delay::bits(Adv7511::Cfg1::Clock_delay::NO_DELAY));
-	adv7511.write<Adv7511::Tmds::Inversion>(0);
+	adv7511.write<Adv7511::Tmds::Inversion>(0); /* no clock inversion (default) */
 
 	/* VIC manual 1080p 60hz 16:9 */
 	adv7511.write<Adv7511::Vic>(0x10);

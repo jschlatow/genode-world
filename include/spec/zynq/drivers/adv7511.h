@@ -130,7 +130,7 @@ struct Genode::Adv7511 : Genode::I2c<Genode::I2c_driver, 1>
 			};
 		};
 
-		struct Tmds : Register<0xd3, 8> {
+		struct Tmds : Register<0xde, 8> {
 			struct Inversion : Bitfield<3, 1> { };
 		};
 

@@ -130,11 +130,8 @@ append qemu_args " -nographic "
 
 run_genode_until {.*change \(finished\).*} 30
 
-grep_output {init -> rom_logger}
+grep_output {\[init -> rom_logger\]}
 compare_output_to {
-[init -> rom_logger] ROM 'remote':
-[init -> rom_logger]   <default />
-[init -> rom_logger]   
 [init -> rom_logger] ROM 'remote':
 [init -> rom_logger]   <default />
 [init -> rom_logger]

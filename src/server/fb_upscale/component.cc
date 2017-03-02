@@ -17,6 +17,7 @@
 #include <base/attached_dataspace.h>
 #include <root/component.h>
 #include <base/component.h>
+#include <base/heap.h>
 #include <base/log.h>
 
 
@@ -49,7 +50,7 @@ class Fb_scaler::Session_component : public Genode::Rpc_object<Framebuffer::Sess
 			  Genode::size_t(_client_mode.width()*_client_mode.height())*2
 			};
 
-		Genode::Lazy_volatile_object<Genode::Attached_dataspace> _parent_ds;
+		Genode::Constructible<Genode::Attached_dataspace> _parent_ds;
 
 		Genode::Signal_context_capability _client_sig_cap;
 
@@ -98,6 +99,7 @@ class Fb_scaler::Session_component : public Genode::Rpc_object<Framebuffer::Sess
 
 			if (_parent_mode.width() && _parent_mode.height()) {
 				_rescale();
+				refresh(0,0, _client_mode.width(), _client_mode.height());
 			} else {
 				/* notify the client of the null mode */
 				if (_client_sig_cap.valid())
@@ -164,8 +166,7 @@ class Fb_scaler::Session_component : public Genode::Rpc_object<Framebuffer::Sess
 				}
 			}
 
-			_parent_fb.refresh(_x_offset+px, _y_offset+py,
-			                   _y_offset+pw, _x_offset+ph);
+			_parent_fb.refresh(_x_offset+px, _y_offset+py, pw, ph);
 		}
 
 

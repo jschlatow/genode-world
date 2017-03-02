@@ -16,6 +16,7 @@
 #include <root/component.h>
 #include <base/component.h>
 #include <base/session_label.h>
+#include <base/heap.h>
 #include <base/log.h>
 #include <base/snprintf.h>
 #include <util/list.h>
@@ -57,7 +58,7 @@ class Log_tee::Session_component : public Rpc_object<Log_session>
 			size_t n = _log.write(msg);
 
 			/* write to our own log session */
-			log((char const *)_prefix, msg.string());
+			log(Cstring(_prefix), msg.string());
 
 			return n;
 		}

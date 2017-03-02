@@ -22,7 +22,7 @@ set build_components {
 	init
 	lib/vfs/jitterentropy
 	server/dynamic_rom
-	server/nat
+	server/nic_router
 	server/ram_fs
 }
 
@@ -66,21 +66,28 @@ append config {
 		<provides><service name="Nic"/></provides>
 	</start>
 
-	<start name="nat">
+	<start name="nic_router">
 		<resource name="RAM" quantum="10M"/>
 		<provides><service name="Nic"/></provides>
 		<config rtt_sec="3">
-			<policy label="uplink" src="10.1.1.2"/>
 
-			<policy label="tor" src="10.1.2.1" tcp-proxy="100">
-				<ip dst="0.0.0.0/0" label="uplink" via="10.1.1.1"/>
-			</policy>
+			<policy label_prefix="tor"                    domain="tor"      />
+			<policy label_prefix="web-client -> fetchurl" domain="fetchurl" />
 
-			<policy label="web-client -> fetchurl" src="10.1.3.1" tcp-proxy="100">
-				<ip dst="10.1.3.1/32">
-					<tcp dst="9050" label="tor" to="10.1.2.2"/>
-				</ip>
-			</policy>
+			<domain name="uplink" interface="10.1.1.2/24" gateway="10.1.1.1">
+				<nat domain="tor" tcp-ports="100" />
+			</domain>
+
+			<domain name="tor" interface="10.1.2.1/24">
+				<tcp dst="0.0.0.0/0">
+					<permit-any domain="uplink" />
+				</tcp>
+			</domain>
+
+			<domain name="fetchurl" interface="10.1.3.1/24">
+				<tcp-forward port="9050" domain="tor" to="10.1.2.2" />
+			</domain>
+
 		</config>
 		<route>
 			<service name="Nic"> <child name="nic_drv"/> </service>
@@ -101,8 +108,8 @@ SOCKSPort 10.1.2.2:9050
 DataDirectory /tor
 			</inline></dir>
 			</content>
-		<policy label="tor -> data" root="/data" writeable="yes"/>
-		<policy label="tor -> conf" root="/conf" writeable="no"/>
+		<policy label_prefix="tor -> data" root="/data" writeable="yes"/>
+		<policy label_prefix="tor -> conf" root="/conf" writeable="no"/>
 		</config>
 	</start>
 
@@ -125,7 +132,7 @@ DataDirectory /tor
 			</libc>
 		</config>
 		<route>
-			<any-service> <child name="nat"/> <parent/> <any-child/> </any-service>
+			<any-service> <child name="nic_router"/> <parent/> <any-child/> </any-service>
 		</route>
 	</start>
 
@@ -137,7 +144,7 @@ DataDirectory /tor
 				<inline description="initial state">
 					<config />
 				</inline>
-				<sleep milliseconds="10000" />
+				<sleep milliseconds="5000" />
 				<inline description="start web client">
 <config>
 	<parent-provides>
@@ -164,7 +171,7 @@ DataDirectory /tor
 	</start>
 </config>
 				</inline>
-				<sleep milliseconds="30000" />
+				<sleep milliseconds="40000" />
 			</rom>
 		</config>
 
@@ -176,7 +183,7 @@ DataDirectory /tor
 		<configfile name="init.config"/>
 		<route>
 			<service name="ROM" label="init.config"> <child name="dynamic_rom"/> </service>
-			<service name="Nic"> <child name="nat"/> </service>
+			<service name="Nic"> <child name="nic_router"/> </service>
 			<any-service> <parent/> <any-child/> </any-service>
 		</route>
 	</start>
@@ -199,8 +206,8 @@ set boot_modules {
 	libssh.lib.so
 	libssl.lib.so
 	lwip.lib.so
-	nat
 	nic_drv
+	nic_router
 	pthread.lib.so
 	ram_fs
 	rtc_drv
@@ -232,10 +239,10 @@ if {[have_include power_on/qemu]} {
 	exec sudo ifconfig $tapdev 10.1.1.1 netmask 255.255.255.0
 	exec sudo iptables -t nat -A POSTROUTING -o $netdev -j MASQUERADE
 	exec sudo iptables -A FORWARD -i $tapdev -o $netdev -j ACCEPT
-	exec sudo iptables -A FORWARD -i $netdev -o tapdev -m state --state RELATED,ESTABLISHED -j ACCEPT
+	exec sudo iptables -A FORWARD -i $netdev -o $tapdev -m state --state RELATED,ESTABLISHED -j ACCEPT
 	exec sudo sysctl -w net.ipv4.ip_forward=1
 
-	append qemu_args " -m 256 -nographic -net nic,model=e1000 -net tap,ifname=tap0 "
+	append qemu_args " -m 256 -nographic -net nic,model=e1000 -net tap,ifname=tap0,downscript=no,script=no "
 }
 
 
@@ -243,7 +250,7 @@ if {[have_include power_on/qemu]} {
 # Execute test case
 #
 
-run_genode_until {.*Congratulations. This browser is configured to use Tor.*/n} 200
+run_genode_until {.*Congratulations. This browser is configured to use Tor.*/n} 300
 set serial_id [output_spawn_id]
 set core_pid [exp_pid -i $serial_id]
 exec kill -9 $core_pid

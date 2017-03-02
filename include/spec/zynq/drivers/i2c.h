@@ -18,7 +18,7 @@
 /* Genode includes */
 #include <util/i2c.h>
 #include <util/mmio.h>
-#include <os/attached_io_mem_dataspace.h>
+#include <base/attached_io_mem_dataspace.h>
 
 namespace Genode {
 	class I2c_driver;
@@ -168,8 +168,8 @@ class Genode::I2c_driver : Genode::I2c_driver_base, Attached_io_mem_dataspace, M
 
 
 	public:
-		I2c_driver(Genode::addr_t const mmio_base, Genode::size_t const mmio_size) :
-			Genode::Attached_io_mem_dataspace(mmio_base, mmio_size),
+		I2c_driver(Genode::Env &env, Genode::addr_t const mmio_base, Genode::size_t const mmio_size) :
+			Genode::Attached_io_mem_dataspace(env, mmio_base, mmio_size),
 			Genode::Mmio((Genode::addr_t)local_addr<void>())
 		{
 			_init();

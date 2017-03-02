@@ -6,21 +6,21 @@
 #define AXI_CLKGEN_H
 
 #include <drivers/board_base.h>
-#include <os/attached_io_mem_dataspace.h>
+#include <base/attached_io_mem_dataspace.h>
 #include <util/mmio.h>
 
 using namespace Genode;
 
 namespace Genode {
-	template<typename DRIVER> class Mmcm_base;
+	template<typename DRIVER> class Mmcm_plain_access;
 	struct Mmcm;
 	class Axi_clkgen;
 }
 
 template<typename DRIVER>
-class Genode::Mmcm_base
+class Genode::Mmcm_plain_access
 {
-	friend Io_base;
+	friend Register_set_plain_access;
 
 	private:
 		DRIVER &_driver;
@@ -49,17 +49,17 @@ class Genode::Mmcm_base
 		}
 
 	public:
-		Mmcm_base(DRIVER &driver) : _driver(driver)
+		Mmcm_plain_access(DRIVER &driver) : _driver(driver)
 		{ }
 
 };
 
 /* Encapsulate Mmcm registers, uses Axi_clkgen as driver */
-struct Genode::Mmcm : Mmcm_base<Axi_clkgen>, Io<Mmcm_base<Axi_clkgen>> {
+struct Genode::Mmcm : Mmcm_plain_access<Axi_clkgen>, Register_set<Mmcm_plain_access<Axi_clkgen>> {
 	public: 
 		Mmcm(Axi_clkgen &driver)
-			: Mmcm_base<Axi_clkgen>(driver), 
-			  Io<Mmcm_base<Axi_clkgen>>(*static_cast<Mmcm_base<Axi_clkgen>*>(this))
+			: Mmcm_plain_access<Axi_clkgen>(driver), 
+			  Register_set(*static_cast<Mmcm_plain_access<Axi_clkgen>*>(this))
 		{ }
 
 		struct Out1 : Register<0x08, 16>
@@ -290,8 +290,8 @@ class Genode::Axi_clkgen : Attached_io_mem_dataspace, Mmio
 
 	public:
 
-		Axi_clkgen(Genode::addr_t const mmio_base, Genode::size_t const mmio_size)
-			: Genode::Attached_io_mem_dataspace(mmio_base, mmio_size),
+		Axi_clkgen(Genode::Env &env, Genode::addr_t const mmio_base, Genode::size_t const mmio_size)
+			: Genode::Attached_io_mem_dataspace(env, mmio_base, mmio_size),
 		     Genode::Mmio((Genode::addr_t)local_addr<void>()),
 		     _mmcm(*this)
 		{ }

@@ -45,7 +45,7 @@
 #define AXI_HDMI_H
 
 #include <drivers/board_base.h>
-#include <os/attached_io_mem_dataspace.h>
+#include <base/attached_io_mem_dataspace.h>
 #include <util/mmio.h>
 
 
@@ -53,8 +53,8 @@ using namespace Genode;
 
 struct Axi_hdmi : Attached_io_mem_dataspace, Mmio
 {
-    Axi_hdmi(Genode::addr_t const mmio_base, Genode::size_t const mmio_size) :
-      Genode::Attached_io_mem_dataspace(mmio_base, mmio_size),
+    Axi_hdmi(Genode::Env &env, Genode::addr_t const mmio_base, Genode::size_t const mmio_size) :
+      Genode::Attached_io_mem_dataspace(env, mmio_base, mmio_size),
       Genode::Mmio((Genode::addr_t)local_addr<void>())
     { 
         // default values for 1080p 16:9 60Hz

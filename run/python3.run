@@ -8,6 +8,11 @@
 if {![have_spec x86]} {
 	puts "Run script is only supported on x86"; exit 0 }
 
+proc depot_user {} { return [get_cmd_arg --depot-user local] }
+
+create_boot_directory
+
+import_from_depot [depot_user]/pkg/python3
 
 #
 # Build
@@ -15,13 +20,11 @@ if {![have_spec x86]} {
 
 build {
 	core init
-	app/python3
-	lib/vfs/jitterentropy
+	server/vfs
 	drivers/timer
 	drivers/rtc
 }
 
-create_boot_directory
 
 #
 # Generate config
@@ -49,22 +52,12 @@ set config {
 		<resource name="RAM" quantum="1M"/>
 		<provides> <service name="Rtc"/> </provides>
 	</start>
-	<start name="python3">
-		<resource name="RAM" quantum="16M"/>
+	<start name="python_fs">
+		<resource name="RAM" quantum="1M"/>
+		<binary name="vfs" />
+		<provides> <service name="File_system" /></provides>
 		<config>
-			<pythonpath name="/python/Lib:" />
-			<file name="hello.py" />
 			<vfs>
-				<dir name="dev">
-					<log/>
-					<jitterentropy name="urandom" />
-					<jitterentropy name="random" />
-					<rtc/>
-					<zero/>
-				</dir>
-				<dir name="python">
-					<tar name="python3.tar" />
-				</dir>
 				<inline name="hello.py">
 print(" \r\n\r");
 print("        -============================-");
@@ -79,8 +72,15 @@ print("   2018 by Genode Labs www.genode-labs.com");
 print(" \r\n\r");
 				</inline>
 			</vfs>
-			<libc stdin="/dev/zero" stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc"/>
+			<policy label_prefix="python3" root="" writeable="no" />
 		</config>
+	</start>
+	<start name="python3" caps="200">
+		<resource name="RAM" quantum="16M"/>
+		<route>
+			<any-service> <parent/> <any-child/> </any-service>
+		</route>
+		<configfile name="python3.config" />
 	</start>
 </config>
 }
@@ -92,15 +92,11 @@ install_config $config
 #
 
 # generic modules
-set boot_modules {
+append boot_modules {
 	core init
-	ld.lib.so libc.lib.so libm.lib.so python3.lib.so 
-	python3
-	vfs_jitterentropy.lib.so
+	ld.lib.so 
 	timer
 	rtc_drv
-	python3.tar
-	vfs.lib.so
 }
 
 build_boot_image $boot_modules

@@ -1,0 +1,13 @@
+<runtime ram="1M" caps="100" binary="remote_rom_server">
+
+	<requires> <nic/> <rom label="remote" /> </requires>
+
+	<content>
+		<rom label="remote_rom_server"/>
+	</content>
+
+	<config>
+		<remote_rom name="remote" src="192.168.42.10" dst="192.168.42.11" />
+	</config>
+
+</runtime>

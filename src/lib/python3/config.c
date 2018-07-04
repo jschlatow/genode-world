@@ -52,6 +52,7 @@ extern PyObject* PyInit__sha512(void);
 extern PyObject* PyInit__blake2(void);
 extern PyObject* PyInit__sha3(void);
 extern PyObject* PyInit_pyexpat(void);
+extern PyObject* PyInit_binascii(void);
 
 /* -- ADDMODULE MARKER 1 -- */
 
@@ -93,6 +94,7 @@ struct _inittab _PyImport_Inittab[] = {
 	{"_blake2", PyInit__blake2},
 	{"_sha3", PyInit__sha3},
 	{"pyexpat", PyInit_pyexpat},
+	{"binascii", PyInit_binascii},
 
 /* -- ADDMODULE MARKER 2 -- */
 

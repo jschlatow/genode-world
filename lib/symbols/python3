@@ -497,6 +497,7 @@ PyInit__symtable T
 PyInit__tracemalloc T
 PyInit__weakref T
 PyInit_atexit T
+PyInit_binascii T
 PyInit_errno T
 PyInit_faulthandler T
 PyInit_gc T
@@ -1329,7 +1330,7 @@ _PyImport_Fini T
 _PyImport_FixupBuiltin T
 _PyImport_FixupExtensionObject T
 _PyImport_Init T
-_PyImport_Inittab D 608
+_PyImport_Inittab D 624
 _PyImport_LoadDynamicModuleWithSpec T
 _PyIncrementalNewlineDecoder_decode T
 _PyList_DebugMallocStats T

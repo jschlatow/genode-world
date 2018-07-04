@@ -185,7 +185,8 @@ SRC_C = \
         zlib/zutil.c \
         mathmodule.c \
         symtablemodule.c \
-        xxsubtype.c
+        xxsubtype.c \
+        binascii.c
 
 CC_C_OPT = -Wno-implicit-function-declaration \
            -Wno-int-to-pointer-cast \

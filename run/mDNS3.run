@@ -1,0 +1,151 @@
+#build "core init drivers/timer app/mDNS drivers/nic"
+
+set build_components { core init drivers/timer
+	server/report_rom
+	server/ip_provider
+	server/local_srvc_provider
+	app/mDNS
+	drivers/nic
+}
+
+source ${genode_dir}/repos/base/run/platform_drv.inc
+append_platform_drv_build_components
+
+build $build_components
+
+create_boot_directory
+
+#
+# Generate config
+#
+
+install_config {
+<config>
+	<parent-provides>
+		<service name="CAP"/>
+		<service name="LOG"/>
+		<service name="RM"/>
+		<service name="SIGNAL"/>
+		<service name="ROM" />
+		<service name="RAM" />
+		<service name="CPU" />
+		<service name="PD" />
+		<service name="IO_MEM" />
+		<service name="IRQ" />
+	</parent-provides>
+	
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+	<default caps="100" />
+
+	<start name="timer">
+		<resource name="RAM" quantum="1M"/>
+		<provides><service name="Timer"/></provides>
+	</start>
+	
+	<start name="report_rom">
+		<resource name="RAM" quantum="1M"/>
+		<provides> 
+			<service name="Report"/> 
+			<service name="ROM"/>
+		</provides>
+		<config verbose="yes">
+			<policy label="mDNS -> akt_ip_rep" report="ip_provider -> ip_report"/>
+			<policy label="mDNS -> local_services" report="local_srvc_provider -> local_services"/>
+			<policy label="bla -> remote_services" report="mDNS -> remote_services"/>
+		</config>
+	</start>
+
+	<start name="local_srvc_provider">
+		<resource name="RAM" quantum="1M"/>
+		<route>
+			<service name="Report" label="local_services"> <child name="report_rom"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+		<config>
+			<service name="client.service1.remote_rom"/>
+			<service name="test_service_12"/>
+			<service name="test_service_24"/>
+		</config>
+	</start>
+
+	<start name="ip_provider">
+		<resource name="RAM" quantum="1M"/>
+		<route>
+			<service name="Report" label="ip_report"> <child name="report_rom"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+		<config>
+			<conf ip="10.0.0.3"/>
+		</config>
+	</start>
+
+	<start name="nic_router" caps="200" priority="0">
+		<resource name="RAM" quantum="10M"/>
+		<provides><service name="Nic"/></provides>
+		<config verbose="no"
+		        verbose_packets="no"
+		        verbose_domain_state="yes"
+		        dhcp_discover_timeout_sec="10"
+		        dhcp_request_timeout_sec="6">
+
+			<report bytes="yes" config="yes" interval_sec="30" />
+
+			<domain name="genode.local"
+			        verbose_packets="yes">		
+			</domain>
+
+		</config>
+		<route>
+			<service name="Nic"> <child name="nic_drv"/> </service>
+			<service name="Report"> <child name="report_rom"/> </service>
+			<any-service> <parent/> <any-child/> </any-service>
+		</route>
+	</start>
+
+	<start name="mDNS">
+		<resource name="RAM" quantum="8M"/>
+		<route>
+			<service name="ROM" label_suffix="local_romService_provider"> <child name="dynamic_rom"/> </service>
+			<service name="Nic"> <child name="nic_drv"/> </service>
+			<service name="Timer"> <child name="timer"/> </service>
+			<service name="Report" label="remote_services"> <child name="report_rom"/> </service>
+			<service name="ROM" label="akt_ip_rep"> <child name="report_rom"/> </service>
+			<service name="ROM" label="local_services"> <child name="report_rom"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+		<config>
+			<conf name="Genode_mDNS_003" rom_list_pd="local_romService_provider"/>
+		</config>
+	</start>
+	
+	<start name="nic_drv">
+		<binary name="} [nic_drv_binary] {" />
+		<resource name="RAM" quantum="4M"/>
+		<provides><service name="Nic"/></provides>
+		<config>
+			<nic tap="tap3" mac="02:00:00:00:00:13"/>
+		</config>
+	</start>
+</config>}
+
+#
+# Boot image
+#
+
+append boot_modules { core ld.lib.so init timer
+	report_rom
+	ip_provider
+	local_srvc_provider
+	mDNS
+	} [nic_drv_binary] {
+}
+
+append_platform_drv_boot_modules
+build_boot_image $boot_modules
+
+append qemu_args " -nographic "
+append qemu_args " -net tap,ifname=tap3 "
+
+run_genode_until forever

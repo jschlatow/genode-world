@@ -173,6 +173,11 @@ namespace Net
 
         };
 		*/
+
+		/* FIXME remove/replace *_Ptr classes
+		 *       The Domain_Name_Ptr is only a set of pointers to the domain name labels.
+		 *       It must therefore be used only temporarily (with minimal scope).
+		 */
 		class Domain_Name_Ptr 
 		{
 			struct Label{

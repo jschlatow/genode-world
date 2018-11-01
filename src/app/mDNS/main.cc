@@ -713,7 +713,7 @@ struct mDNS::Main : public Ethernet_frame, public Ipv4_packet
 		Genode::log("component constructed.");
 	}
 };
-Genode::size_t 	Component::stack_size() { return 128*1024*sizeof(long); }
+Genode::size_t 	Component::stack_size() { return 8*1024*sizeof(long); }
 void 	Component::construct(Genode::Env &env)
 {
 	env.exec_static_constructors();

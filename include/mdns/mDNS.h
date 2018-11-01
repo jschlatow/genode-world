@@ -14,7 +14,7 @@
 #include <util/list.h>
 
 #include <net/ipv4.h>
-#include <mDNS/Resource_Record.h>
+#include <mdns/Resource_Record.h>
 
 namespace Net
 {
@@ -178,6 +178,7 @@ namespace Net
           public:
             
 
+				/* FIXME _list is not thread-safe but is used by multiple threads */
             Genode::List<service_item>      _list;
             Genode::uint8_t _count;
             bool            update = false;

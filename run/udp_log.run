@@ -1,0 +1,69 @@
+if {[expr [have_spec linux]]} {
+	puts "\n Run script is not supported on this platform. \n"; exit 0 }
+
+#
+# Test logging to file system
+#
+
+build {
+	core init drivers/timer
+	proxy/udp_log
+	test/bomb
+	drivers/nic
+}
+
+set timeout 240
+
+set config {
+<config prio_levels="2">
+	<parent-provides>
+		<service name="CPU"/>
+		<service name="LOG"/>
+		<service name="PD"/>
+		<service name="RM"/>
+		<service name="ROM"/>
+		<service name="IO_PORT"/>
+		<service name="IO_MEM"/>
+		<service name="IRQ"/>
+	</parent-provides>
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+	<default caps="100"/>
+	<start name="timer">
+		<resource name="CPU" quantum="10"/>
+		<resource name="RAM" quantum="1M"/>
+		<provides><service name="Timer"/></provides>
+	</start>
+	<start name="nic_drv">
+		<resource name="RAM" quantum="2M"/>
+		<provides><service name="Nic"/></provides>
+	</start>
+	<start name="udp_log">
+		<resource name="RAM" quantum="2M"/>
+		<provides><service name="LOG"/></provides>
+		<config src_ip="192.168.32.182" verbose="yes">
+			<default-policy ip="192.168.32.180" />
+		</config>
+	</start>
+	<start name="bomb-master" priority="-1" caps="500">
+		<binary name="bomb"/>
+		<resource name="CPU" quantum="90"/>
+		<resource name="RAM" quantum="1G"/>
+		<route>
+			<any-service> <any-child/> <parent/> </any-service>
+		</route>
+		<config rounds="10" generations="1" sleep="1000"/>
+	</start>
+</config>}
+
+create_boot_directory
+
+install_config $config
+
+build_boot_image "core init ld.lib.so bomb nic_drv timer udp_log"
+
+append qemu_args " -nographic"
+append qemu_args " -net tap,ifname=tap2 "
+
+run_genode_until forever

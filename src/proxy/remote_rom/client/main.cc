@@ -35,6 +35,8 @@
 #include <backend_base.h>
 #include <util.h>
 
+#include <trace/timestamp.h>
+
 namespace Remote_rom {
 	using Genode::size_t;
 	using Genode::Attached_ram_dataspace;
@@ -216,6 +218,7 @@ struct Remote_rom::Main : public Rom_receiver_base
 	Genode::Attached_rom_dataspace _config = { env, "config" };
 
 	Backend_client_base &_backend;
+	Genode::Trace::Timestamp _start_ts { 0 };
 
 	char remotename[255];
 
@@ -241,6 +244,9 @@ struct Remote_rom::Main : public Rom_receiver_base
 
 	char* start_new_content(unsigned hash, size_t len)
 	{
+		if (true)
+			_start_ts = Genode::Trace::timestamp();
+
 		/* save expected hash */
 		/* TODO (optional) skip if we already have the same data */
 		rom_module.hash(hash);
@@ -255,6 +261,14 @@ struct Remote_rom::Main : public Rom_receiver_base
 
 		if (rom_module.commit_bg())
 			remote_rom_root.notify_clients();
+
+		if (true) {
+			Genode::Trace::Timestamp current = Genode::Trace::timestamp();
+			Genode::Trace::Timestamp ticks   = current - _start_ts;
+			if (current < _start_ts)
+				ticks = ((Genode::Trace::Timestamp)-1) - _start_ts + current;
+			Genode::log("receiving took ", ticks, " cycles");
+		}
 	}
 
 };

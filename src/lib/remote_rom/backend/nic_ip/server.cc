@@ -8,6 +8,8 @@
 #include <base.h>
 #include <backend_base.h>
 
+#include <trace/timestamp.h>
+
 namespace Remote_rom {
 	using  Genode::Cstring;
 	using  Genode::Microseconds;
@@ -188,6 +190,7 @@ class Remote_rom::Backend_server :
 		friend class Content_sender;
 
 		Content_sender              _content_sender { _timer, *this };
+		Genode::Trace::Timestamp    _start_ts { 0 };
 
 		Backend_server(Backend_server &);
 		Backend_server &operator= (Backend_server &);
@@ -310,6 +313,7 @@ void Remote_rom::Backend_server::receive(Packet &packet,
 
 			if (_verbose) {
 				Genode::log("Sending data of size ", _content_sender.content_size());
+				_start_ts = Genode::Trace::timestamp();
 			}
 
 			_content_sender.transmit(true);
@@ -352,7 +356,15 @@ void Remote_rom::Backend_server::receive(Packet &packet,
 				_content_sender.go_back(ack.ack_until());
 			}
 
-			_content_sender.transmit(false);
+			bool finished = _content_sender.transmit(false);
+
+			if (_verbose && finished) {
+				Genode::Trace::Timestamp current = Genode::Trace::timestamp();
+				Genode::Trace::Timestamp ticks   = current - _start_ts;
+				if (current < _start_ts)
+					ticks = ((Genode::Trace::Timestamp)-1) - _start_ts + current;
+				Genode::log("sending took ", ticks, " cycles");
+			}
 
 			break;
 		}

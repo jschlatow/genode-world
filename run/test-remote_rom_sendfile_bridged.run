@@ -12,8 +12,9 @@ proc nic_drv_opt {} {
 set build_components { core init drivers/timer
 	app/rom_logger
 	server/dynamic_rom
-	proxy/remote_rom/backend/nic_ip/server
+	proxy/remote_rom/backend/nic_ip
 	drivers/nic
+	server/nic_bridge
 }
 
 source ${genode_dir}/repos/base/run/platform_drv.inc
@@ -42,6 +43,7 @@ install_config {
 		<service name="IRQ" />
 	</parent-provides>
 	<default-route>
+		<service name="Nic"> <child name="nic_bridge"/></service>
 		<any-service> <parent/> <any-child/> </any-service>
 	</default-route>
 	<default caps="100" />
@@ -57,11 +59,30 @@ install_config {
 		<resource name="RAM" quantum="8M"/>
 		<route>
 			<service name="ROM" label_suffix="remote"> <parent label="test-file"/> </service>
-			<service name="Nic"> <child name="nic_drv"/> </service>
+			<service name="Nic"> <child name="nic_bridge"/> </service>
 			<any-service> <parent/> <any-child/></any-service>
 		</route>
 		<config chksum_offload="yes">
 			<remote_rom name="remote" src="192.168.42.10" dst="192.168.42.11" binary="true"/>
+		</config>
+	</start>
+	<start name="remote_rom_client">
+		<resource name="RAM" quantum="8M"/>
+		<provides><service name="ROM"/></provides>
+		<config>
+			<remote_rom name="foobar" src="192.168.42.21" dst="192.168.42.20" />
+		</config>
+	</start>
+	<start name="nic_bridge">
+		<resource name="RAM" quantum="4M"/>
+		<provides><service name="Nic"/></provides>
+		<route>
+			<service name="Nic"><child name="nic_drv"/></service>
+			<any-service> <parent/> <any-child/></any-service>
+		</route>
+		<config>
+			<policy label_prefix="remote_rom_server" ip_addr="192.168.42.10" />
+			<policy label_prefix="remote_rom_client" ip_addr="192.168.42.21" />
 		</config>
 	</start>
 	<start name="nic_drv" } [nic_drv_opt] {>
@@ -80,9 +101,11 @@ install_config {
 
 append boot_modules { core ld.lib.so init timer
 	remote_rom_server
+	remote_rom_client
 	dynamic_rom
 	rom_logger
 	test-file
+	nic_bridge
 	} [nic_drv_binary] {
 }
 

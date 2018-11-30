@@ -11,8 +11,10 @@ proc nic_drv_opt {} {
 
 set build_components { core init drivers/timer
 	app/rom_logger
-	proxy/remote_rom/backend/nic_ip/client
+	proxy/remote_rom/backend/nic_ip
+	server/dynamic_rom
 	drivers/nic
+	server/nic_bridge
 }
 
 source ${genode_dir}/repos/base/run/platform_drv.inc
@@ -41,6 +43,7 @@ install_config {
 		<service name="IRQ" />
 	</parent-provides>
 	<default-route>
+		<service name="Nic"> <child name="nic_bridge"/></service>
 		<any-service> <parent/> <any-child/> </any-service>
 	</default-route>
 	<default caps="100" />
@@ -63,12 +66,48 @@ install_config {
 			<remote_rom name="remote" src="192.168.42.11" dst="192.168.42.10" />
 		</config>
 	</start>
+	<start name="dynamic_rom">
+		<resource name="RAM" quantum="2M"/>
+		<provides><service name="ROM"/></provides>
+		<config>
+			<rom name="foobar">
+				<sleep milliseconds="5000" />
+				<inline description="disable X-ray mode">
+					<xray enabled="no"/>
+				</inline>
+				<sleep milliseconds="20000" />
+			</rom>
+		</config>
+	</start>
+	<start name="remote_rom_server">
+		<resource name="RAM" quantum="8M"/>
+		<route>
+			<service name="ROM" label_suffix="foobar"> <child name="dynamic_rom"/> </service>
+			<service name="Nic"> <child name="nic_bridge"/> </service>
+			<any-service> <parent/> <any-child/></any-service>
+		</route>
+		<config chksum_offload="yes">
+			<remote_rom name="foobar" src="192.168.42.20" dst="192.168.42.21" binary="true"/>
+		</config>
+	</start>
+	<start name="nic_bridge">
+		<resource name="RAM" quantum="4M"/>
+		<provides><service name="Nic"/></provides>
+		<route>
+			<service name="Nic"><child name="nic_drv"/></service>
+			<any-service><parent /><any-child /></any-service>
+		</route>
+		<config verbose="no">
+			<policy label_prefix="remote_rom_server" ip_addr="192.168.42.20" />
+			<policy label_prefix="remote_rom_client" ip_addr="192.168.42.11" />
+		</config>
+	</start>
 	<start name="nic_drv" } [nic_drv_opt] {>
 		<binary name="} [nic_drv_binary] {" />
 		<resource name="RAM" quantum="4M"/>
 		<provides><service name="Nic"/></provides>
 		<config>
-			<nic tap="tap1" mac="02:00:00:00:00:11"/>
+			<nic tap="tap2" mac="02:00:00:00:00:11"/>
 		</config>
 	</start>
 </config>}
@@ -79,7 +118,10 @@ install_config {
 
 append boot_modules { core ld.lib.so init timer
 	remote_rom_client
+	remote_rom_server
 	rom_logger
+	dynamic_rom
+	nic_bridge
 	} [nic_drv_binary] {
 }
 

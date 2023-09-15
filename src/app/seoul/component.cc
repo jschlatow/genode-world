@@ -216,8 +216,7 @@ class Vcpu : public StaticReceiver<Vcpu>
 
 		void _handle_vm_exception()
 		{
-			_vm_vcpu.with_state([this](Genode::Vm_state &vm_state) -> bool {
-				Genode::Vcpu_state & state = (Genode::Vcpu_state &) vm_state;
+			_vm_vcpu.with_state([this](Genode::Vcpu_state &state) -> bool {
 				unsigned const exit = state.exit_reason;
 
 				if (_svm) {

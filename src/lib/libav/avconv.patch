@@ -1,0 +1,53 @@
+- use read() instead of mmap() to access framebuffer
+
++++ src/lib/libav/libavdevice/fbdev.c	2024-01-15 14:37:08.867155543 +0100
+@@ -152,11 +152,16 @@
+     fbdev->frame_linesize  = fbdev->width * fbdev->bytes_per_pixel;
+     fbdev->frame_size      = fbdev->frame_linesize * fbdev->height;
+     fbdev->time_frame      = AV_NOPTS_VALUE;
+-    fbdev->data = mmap(NULL, fbdev->fixinfo.smem_len, PROT_READ, MAP_SHARED, fbdev->fd, 0);
+-    if (fbdev->data == MAP_FAILED) {
+-        ret = AVERROR(errno);
+-        av_log(avctx, AV_LOG_ERROR, "Error in mmap(): %s\n", strerror(errno));
+-        goto fail;
++//    fbdev->data = mmap(NULL, fbdev->fixinfo.smem_len, PROT_READ, MAP_SHARED, fbdev->fd, 0);
++//    if (fbdev->data == MAP_FAILED) {
++//        ret = AVERROR(errno);
++//        av_log(avctx, AV_LOG_ERROR, "Error in mmap(): %s\n", strerror(errno));
++//        goto fail;
++//    }
++
++    if (fbdev->frame_size != fbdev->fixinfo.smem_len) {
++        av_log(avctx, AV_LOG_WARNING, "Frame size (%d) does not match framebuffer size (%d).\n",
++               fbdev->frame_size, fbdev->fixinfo.smem_len);
+     }
+ 
+     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+@@ -218,17 +223,9 @@
+ 
+     pkt->pts = curtime;
+ 
+-    /* compute visible data offset */
+-    pin = fbdev->data + fbdev->bytes_per_pixel * fbdev->varinfo.xoffset +
+-                        fbdev->varinfo.yoffset * fbdev->fixinfo.line_length;
+     pout = pkt->data;
+ 
+-    // TODO it'd be nice if the lines were aligned
+-    for (i = 0; i < fbdev->height; i++) {
+-        memcpy(pout, pin, fbdev->frame_linesize);
+-        pin  += fbdev->fixinfo.line_length;
+-        pout += fbdev->frame_linesize;
+-    }
++    read(fbdev->fd, pout, fbdev->frame_size);
+ 
+     return fbdev->frame_size;
+ }
+@@ -237,7 +234,7 @@
+ {
+     FBDevContext *fbdev = avctx->priv_data;
+ 
+-    munmap(fbdev->data, fbdev->frame_size);
++//    munmap(fbdev->data, fbdev->frame_size);
+     close(fbdev->fd);
+ 
+     return 0;

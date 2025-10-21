@@ -1,0 +1,11 @@
+Prevent 'nettle-internal.h:62:40: error: implicit declaration of function 'alloca' [-Wimplicit-function-declaration]'
+with GCC 14 where this was promoted to an error.
++++ src/nettle-internal.h	2025-10-21 15:30:27.973484446 +0200
+@@ -58,6 +58,7 @@
+  */
+ 
+ #if HAVE_ALLOCA
++#include <stdlib.h>
+ # define TMP_DECL(name, type, max) type *name
+ # define TMP_ALLOC(name, size) (name = alloca(sizeof (*name) * (size)))
+ # define TMP_DECL_ALIGN(name, max) void *name
